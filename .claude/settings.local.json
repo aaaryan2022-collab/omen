@@ -47,7 +47,8 @@
       "Bash(git commit -m 'DEBUGGER: fix 5 failures \\(main.py KeyError/reload_config, security/permissions attr, automation stubs, Unicode\\) — report exact file/line, zero silent fixes *)",
       "Bash(echo \"4. MACHINE PATHS: .claude/settings.json hardcodes E:\\\\\\\\OMEN — breaks on other machines.\")",
       "Bash(echo \"6. ENV HARDCODED: ALLOWED_DIRECTORIES = C:\\\\\\\\Users\\\\\\\\ARYAN... = not portable.\")",
-      "Bash(git commit -m 'Supervise loophole audit; preserve structured batch access and gate controls *)"
+      "Bash(git commit -m 'Supervise loophole audit; preserve structured batch access and gate controls *)",
+      "Bash(git commit -m 'DEBUGGER: fix remaining categories \\(STARK clean, tests+README, supervisor_gate+template\\) — all reported with file/line, zero silent fixes *)"
     ]
   }
 }
