@@ -1,0 +1,298 @@
+/* OMEN Dark Theme — Futuristic JARVIS Command Center */
+
+/* ===== Global ===== */
+QMainWindow {
+    background-color: #0A0E17;
+    color: #E2E8F0;
+    font-family: "Segoe UI", "Segoe UI Light", Arial;
+    font-size: 12pt;
+}
+
+QWidget {
+    background-color: #0A0E17;
+    color: #E2E8F0;
+    font-family: "Segoe UI", "Segoe UI Light", Arial;
+    font-size: 12pt;
+    border: none;
+}
+
+/* ===== Sidebar ===== */
+QListWidget {
+    background-color: #111827;
+    border-right: 1px solid #2A3A56;
+    color: #8B9CB8;
+    font-size: 12pt;
+    padding: 8px;
+    outline: none;
+}
+QListWidget::item {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin: 2px 0;
+}
+QListWidget::item:selected {
+    background-color: rgba(0, 212, 170, 0.15);
+    color: #00D4AA;
+    border-left: 3px solid #00D4AA;
+}
+QListWidget::item:hover {
+    background-color: #1A2035;
+    color: #E2E8F0;
+}
+
+/* ===== Scrollbars ===== */
+QScrollBar:vertical {
+    background: #0A0E17;
+    width: 6px;
+    border: none;
+}
+QScrollBar::handle:vertical {
+    background: #2A3A56;
+    border-radius: 3px;
+    min-height: 20px;
+}
+QScrollBar::handle:vertical:hover {
+    background: #00D4AA;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+QScrollBar:horizontal {
+    background: #0A0E17;
+    height: 6px;
+    border: none;
+}
+QScrollBar::handle:horizontal {
+    background: #2A3A56;
+    border-radius: 3px;
+    min-width: 20px;
+}
+
+/* ===== Buttons ===== */
+QPushButton {
+    background-color: #1A2035;
+    color: #E2E8F0;
+    border: 1px solid #2A3A56;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 12pt;
+    min-height: 32px;
+}
+QPushButton:hover {
+    background-color: #243049;
+    border-color: #00D4AA;
+    color: #00D4AA;
+}
+QPushButton:pressed {
+    background-color: #00A888;
+    color: #0A0E17;
+}
+QPushButton#primaryBtn {
+    background-color: #00D4AA;
+    color: #0A0E17;
+    border: none;
+    font-weight: bold;
+}
+QPushButton#primaryBtn:hover {
+    background-color: #33FFDD;
+    color: #0A0E17;
+}
+QPushButton#dangerBtn {
+    background-color: #EF4444;
+    color: white;
+    border: none;
+    font-weight: bold;
+}
+QPushButton#dangerBtn:hover {
+    background-color: #F87171;
+}
+QPushButton#emergencyBtn {
+    background-color: #DC2626;
+    color: white;
+    border: 2px solid #EF4444;
+    font-weight: bold;
+    font-size: 14pt;
+    padding: 12px 24px;
+    border-radius: 8px;
+    letter-spacing: 2px;
+}
+QPushButton#emergencyBtn:hover {
+    background-color: #EF4444;
+    border-color: #FCA5A5;
+    color: #0A0E17;
+}
+
+/* ===== Input Fields ===== */
+QLineEdit, QTextEdit, QPlainTextEdit {
+    background-color: #111827;
+    border: 1px solid #2A3A56;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #E2E8F0;
+    font-size: 12pt;
+    selection-background-color: #00D4AA;
+    selection-color: #0A0E17;
+}
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
+    border: 1px solid #00D4AA;
+    background-color: #1A2035;
+}
+
+/* ===== Labels ===== */
+QLabel {
+    color: #E2E8F0;
+    font-size: 12pt;
+}
+QLabel#headerLabel {
+    font-size: 24pt;
+    font-weight: bold;
+    color: #00D4AA;
+}
+QLabel#subheaderLabel {
+    font-size: 16pt;
+    color: #8B9CB8;
+}
+QLabel#statusLabel {
+    color: #10B981;
+    font-weight: bold;
+}
+QLabel#errorLabel {
+    color: #EF4444;
+}
+
+/* ===== Cards/Containers ===== */
+QFrame {
+    background-color: #1A2035;
+    border: 1px solid #2A3A56;
+    border-radius: 8px;
+    padding: 12px;
+}
+#metricCard {
+    background-color: #1A2035;
+    border: 1px solid #2A3A56;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+/* ===== Chat View ===== */
+QListWidget#chatHistory {
+    background-color: #0A0E17;
+    border: none;
+    padding: 8px;
+}
+QListWidget#chatHistory::item {
+    padding: 8px 4px;
+    border: none;
+}
+
+/* ===== Progress Bars ===== */
+QProgressBar {
+    background-color: #111827;
+    border: 1px solid #2A3A56;
+    border-radius: 4px;
+    text-align: center;
+    height: 12px;
+    color: transparent;
+}
+QProgressBar::chunk {
+    background-color: #00D4AA;
+    border-radius: 3px;
+}
+
+/* ===== Tab Widget ===== */
+QTabWidget::pane {
+    border: 1px solid #2A3A56;
+    background-color: #0A0E17;
+    border-radius: 6px;
+}
+QTabBar::tab {
+    background-color: #111827;
+    border: 1px solid #2A3A56;
+    padding: 8px 16px;
+    margin-right: 2px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+QTabBar::tab:selected {
+    background-color: #1A2035;
+    border-bottom: 2px solid #00D4AA;
+    color: #00D4AA;
+}
+QTabBar::tab:hover {
+    color: #00D4AA;
+}
+
+/* ===== ComboBox ===== */
+QComboBox {
+    background-color: #111827;
+    border: 1px solid #2A3A56;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: #E2E8F0;
+}
+QComboBox:hover {
+    border-color: #00D4AA;
+}
+QComboBox::drop-down {
+    border: none;
+    width: 24px;
+}
+QComboBox::down-arrow {
+    width: 12px;
+    height: 12px;
+}
+QComboBox QAbstractItemView {
+    background-color: #111827;
+    color: #E2E8F0;
+    selection-background-color: #00D4AA;
+    selection-color: #0A0E17;
+}
+
+/* ===== Tree/List ===== */
+QTreeWidget {
+    background-color: #111827;
+    color: #E2E8F0;
+    border: 1px solid #2A3A56;
+    padding: 4px;
+}
+QTreeWidget::item {
+    padding: 6px 8px;
+}
+QTreeWidget::item:selected {
+    background-color: rgba(0, 212, 170, 0.15);
+    color: #00D4AA;
+}
+
+/* ===== Menu ===== */
+QMenu {
+    background-color: #111827;
+    border: 1px solid #2A3A56;
+    color: #E2E8F0;
+}
+QMenu::item {
+    padding: 8px 24px;
+}
+QMenu::item:selected {
+    background-color: #1A2035;
+    color: #00D4AA;
+}
+
+/* ===== ToolTip ===== */
+QToolTip {
+    background-color: #1A2035;
+    border: 1px solid #00D4AA;
+    color: #E2E8F0;
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+
+/* ===== Emergency State ===== */
+#emergencyBanner {
+    background-color: rgba(220, 38, 38, 0.9);
+    color: white;
+    border: 2px solid #EF4444;
+    padding: 12px;
+    font-weight: bold;
+    font-size: 14pt;
+    border-radius: 6px;
+}

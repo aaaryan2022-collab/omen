@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest -q)",
+      "Bash(python -m py_compile \"E:\\\\OMEN\\\\core\\\\context.py\")",
+      "Bash(ls -la \"E:\\\\OMEN\" 2>/dev/null || ls -la /c/Users/ARYAN/OMEN 2>/dev/null || pwd && ls -la)",
+      "Bash(python -m compileall \"E:\\\\OMEN\")",
+      "Bash(python -)",
+      "Bash(python -m py_compile main.py)",
+      "Bash(grep -v -E \"\\\\.git/|\\\\.pytest_cache/|\\\\.claude/|\\\\.env$|\\\\.env\\\\.example$\")",
+      "Bash(find \"E:\\\\OMEN workspace\" -type f 2>/dev/null | sort)",
+      "Bash(dir /s /b)",
+      "Bash(python -c ' *)",
+      "Bash(python3)",
+      "Bash(find . -type f \\\\\\( -name '*.py' -o -name '*.txt' -o -name '*.json' \\\\\\) -not -path './.git/*' -not -path './.pytest_cache/*' -not -path './.claude/*' | sort > /tmp/all_files.txt && wc -l /tmp/all_files.txt)",
+      "Bash(python3 -c ' *)",
+      "Bash(awk '{print $NF, $5}')",
+      "Bash(python -m py_compile E:/OMEN/main.py E:/OMEN/app/config.py E:/OMEN/app/constants.py E:/OMEN/app/logging_config.py E:/OMEN/core/agent.py E:/OMEN/core/brain.py E:/OMEN/core/context.py E:/OMEN/core/events.py E:/OMEN/core/executor.py E:/OMEN/core/memory.py E:/OMEN/core/models.py E:/OMEN/core/planner.py E:/OMEN/automation/keyboard.py E:/OMEN/automation/mouse.py E:/OMEN/automation/screenshots.py E:/OMEN/automation/windows.py E:/OMEN/database/database.py E:/OMEN/database/models.py E:/OMEN/database/repositories.py E:/OMEN/scheduler/scheduler.py E:/OMEN/scheduler/jobs.py E:/OMEN/safety/safety.py E:/OMEN/security/credential_store.py E:/OMEN/security/secrets.py)",
+      "Bash(echo \"=== BUG REPORT — E:\\\\\\\\OMEN \\(171 files, skips .git .pytest_cache .claude .env .env.example\\) ===\")",
+      "Bash(cat)",
+      "Bash(python /tmp/scan_all.py)",
+      "Bash(sed -i '1,4d' main.py)",
+      "Bash(sed -i '1,4d' ui/chat.py)",
+      "Bash(sed -i '1,4d' ui/main_window.py)",
+      "Bash(grep -n -E 'except:|== None|!= None|/ 0|raise Exception\\\\\\(|pass$' E:/OMEN/app/constants.py)",
+      "Bash(cd /mnt/e/OMEN && find . -type f -name \"*.py\" | head -20)",
+      "Bash(grep -v '.db$')",
+      "Bash(grep -v '.log$')",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
