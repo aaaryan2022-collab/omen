@@ -101,7 +101,7 @@ def run_wizard():
     print("=" * 50)
     print("This will guide you through initial configuration.\n")
 
-    config.reload_config()
+    reload_config()
 
     # Step 1: Confirm Ollama
     print("[1/5] Checking Ollama connection...")
