@@ -233,10 +233,10 @@ def run_self_test():
                 print(f"  ✓ {name}")
                 tests_passed += 1
             else:
-                print(f"  ✗ {name} (no result)")
+                print(f"  FAIL {name} (no result)")
                 tests_failed += 1
         except Exception as e:
-            print(f"  ✗ {name}: {e}")
+            print(f"  FAIL {name}: {e}")
             tests_failed += 1
 
     # Config test

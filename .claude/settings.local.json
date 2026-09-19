@@ -43,7 +43,8 @@
       "Bash(timeout 2 python main.py --wizard)",
       "Bash(timeout 3 python main.py --test)",
       "Bash(python -c \"from database.database import get_db; d=get_db\\(\\); print\\('DB OK', type\\(d\\).__name__\\)\")",
-      "Bash(python -c \"from safety.emergency_stop import get_emergency_stop; es=get_emergency_stop\\(\\); print\\('Emergency stop:', es\\); print\\('Is stopped:', es.is_stopped\\)\")"
+      "Bash(python -c \"from safety.emergency_stop import get_emergency_stop; es=get_emergency_stop\\(\\); print\\('Emergency stop:', es\\); print\\('Is stopped:', es.is_stopped\\)\")",
+      "Bash(git commit -m 'DEBUGGER: fix 5 failures \\(main.py KeyError/reload_config, security/permissions attr, automation stubs, Unicode\\) — report exact file/line, zero silent fixes *)"
     ]
   }
 }
