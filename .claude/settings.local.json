@@ -30,7 +30,8 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(git config *)",
-      "Bash(git commit -m 'Clean STARK/JARVIS embedded branding from config; fix agent import; add safe .get\\(\\) access in CLI/debug loops *)"
+      "Bash(git commit -m 'Clean STARK/JARVIS embedded branding from config; fix agent import; add safe .get\\(\\) access in CLI/debug loops *)",
+      "Bash(git checkout *)"
     ]
   }
 }
