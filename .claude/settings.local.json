@@ -34,7 +34,9 @@
       "Bash(git checkout *)",
       "Bash(git commit -m 'Add JARVIS launch script — Stark-mode activation batch command *)",
       "Bash(python -c \"from database.database import get_db; db=get_db\\(\\); print\\('DB OK:', db\\); print\\('Tables:', db.execute\\(\\\\\"SELECT name FROM sqlite_master WHERE type='table'\\\\\"\\).fetchall\\(\\)\\)\")",
-      "Bash(git commit -m 'Fix wizard reload_config call; add supervised batch access; maintain supervisor gate *)"
+      "Bash(git commit -m 'Fix wizard reload_config call; add supervised batch access; maintain supervisor gate *)",
+      "Bash(python -c \"from database.database import get_db; db=get_db\\(\\); print\\('DB connected:', type\\(db\\).__name__\\); print\\('Data file exists:', __import__\\('os'\\).path.exists\\('data/omen.db'\\)\\)\")",
+      "Bash(python -c \"from PySide6.QtWidgets import QApplication; print\\('PySide6 import OK'\\)\")"
     ]
   }
 }
