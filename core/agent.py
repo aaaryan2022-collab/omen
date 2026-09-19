@@ -21,7 +21,6 @@ from app.logging_config import logger
 from productivity.notifications import NotificationService
 from voice.tts import TTSController
 from core.events import EventBus, EventType
-from core.memory import MemoryManager
 
 
 class Agent:

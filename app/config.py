@@ -1,7 +1,4 @@
 # ============================================
-# STARK // JARVIS UPGRADE — EXTREME MODE
-# Authored by Tony Stark. No limits. No backups.
-# ============================================
 
 """
 Configuration management for OMEN using Pydantic Settings.

@@ -54,9 +54,9 @@ def run_cli():
 
         try:
             result = agent.process(user_input)
-            print(f"\nOMEN: {result['response_text']}")
-            if result['plan'] and result['plan'].steps:
-                print(f"[Plan: {len(result['plan'].steps)} step(s)]")
+            print(f"\nOMEN: {result.get('response_text')}")
+            if result.get('plan') and result.get('plan').steps:
+                print(f"[Plan: {len(result.get('plan').steps)} step(s)]")
         except Exception as e:
             print(f"Error: {e}")
 
@@ -87,9 +87,9 @@ def run_debug():
 
         try:
             result = agent.process(user_input)
-            print(f"\nOMEN: {result['response_text']}")
+            print(f"\nOMEN: {result.get('response_text')}")
             if result.get('plan'):
-                for step in result['plan'].steps:
+                for step in result.get('plan').steps:
                     print(f"  Step: {step.tool} [{step.status.value}]")
         except Exception as e:
             print(f"Error: {e}")
