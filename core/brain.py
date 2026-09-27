@@ -85,3 +85,10 @@ class Brain:
         return messages
 
 
+
+    def smart_respond(self, query: str) -> str:
+        """Direct smart response when LLM unavailable."""
+        q = query.lower()
+        if "hello" in q or "hi" in q: return "Hello! OMEN is online and ready."
+        if "what can you do" in q: return "I can talk back, take voice commands, manage todos, reminders, open apps, search web."
+        return f"Processing: {query}"

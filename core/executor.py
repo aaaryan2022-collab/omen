@@ -126,7 +126,7 @@ class Executor:
         validated = tool.validate_args(args) if tool.args_schema else args
         # Ensure paths respect permission sandbox
         for key, val in validated.items():
-            if isinstance(val, str) and any(keyword in key for keyword in ("path", "file", "dir", "folder")):
+            if isinstance(val, str) and any(keyword in val.lower() for keyword in ("path", "file", "dir", "folder")):
                 self.perm_manager.validate_path(val)  # raises PermissionError if disallowed
         return validated
 

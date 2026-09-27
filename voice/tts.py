@@ -17,7 +17,7 @@ class OmenTTS:
 
     def __init__(self):
         self._provider = TTSController()
-        self._available = self._provider.is_available
+        self._available = self._provider.is_available()
 
     @property
     def is_available(self) -> bool:

@@ -28,6 +28,8 @@ class OmenSTT:
             logger.info("STT: Mock mode active")
         else:
             self._provider = SpeechRecProvider()
+        # AUTO-START
+        self.start()
             if not self._provider.is_available:
                 logger.warning("SpeechRecognition not available — voice mode disabled")
 

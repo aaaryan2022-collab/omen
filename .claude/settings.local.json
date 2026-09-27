@@ -64,7 +64,12 @@
       "Bash(python -m unittest tests/test_smoke -v)",
       "Bash(git commit -m 'TESTS: all passing \\(3/3\\), no fixes needed *)",
       "Bash(python -m unittest tests.test_smoke -v)",
-      "Bash(git commit -m 'COMMIT: working tree sync — settings.local.json updated *)"
+      "Bash(git commit -m 'COMMIT: working tree sync — settings.local.json updated *)",
+      "Bash(python -m compileall .)",
+      "Bash(python -c \"import main\")",
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(python)",
+      "Bash(git commit -m 'AUDIT LOOP 2: voice STT auto-start, TTS method call, brain smart respond, agent TTS import, executor path check, 4/4 modules fixed, 100 stress iterations completed — model clarification: cannot use nonexistent APIs \\(nemotron-3/gemini-3.7-flash/big-pickle\\); using real working stack \\(auto/opus/sonnet-5\\) *)"
     ]
   }
 }
