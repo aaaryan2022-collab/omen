@@ -54,7 +54,11 @@
       "Bash(timeout 3 python main.py --wizard)",
       "Bash(pytest tests/test_smoke.py -v)",
       "Bash(python -m unittest discover tests/)",
-      "Bash(git commit -m 'OMEN: Full validation, tests implemented & passing, runtime modes verified, all bugs fixed *)"
+      "Bash(git commit -m 'OMEN: Full validation, tests implemented & passing, runtime modes verified, all bugs fixed *)",
+      "Bash(python main.py --test)",
+      "Bash(python -m py_compile /e/OMEN/ui/main_window.py)",
+      "Bash(git commit -m 'FIX: replace speak_async with speak in OmenTTS calls \\(AttributeError fix\\) *)",
+      "Bash(git commit -m 'FIX: OmenTTS speak_async -> speak \\(AttributeError\\) *)"
     ]
   }
 }
