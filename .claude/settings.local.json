@@ -62,7 +62,9 @@
       "Bash(python main.py --version)",
       "Bash(python -m unittest discover tests/ -v)",
       "Bash(python -m unittest tests/test_smoke -v)",
-      "Bash(git commit -m 'TESTS: all passing \\(3/3\\), no fixes needed *)"
+      "Bash(git commit -m 'TESTS: all passing \\(3/3\\), no fixes needed *)",
+      "Bash(python -m unittest tests.test_smoke -v)",
+      "Bash(git commit -m 'COMMIT: working tree sync — settings.local.json updated *)"
     ]
   }
 }
