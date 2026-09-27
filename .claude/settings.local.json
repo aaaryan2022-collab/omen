@@ -58,7 +58,11 @@
       "Bash(python main.py --test)",
       "Bash(python -m py_compile /e/OMEN/ui/main_window.py)",
       "Bash(git commit -m 'FIX: replace speak_async with speak in OmenTTS calls \\(AttributeError fix\\) *)",
-      "Bash(git commit -m 'FIX: OmenTTS speak_async -> speak \\(AttributeError\\) *)"
+      "Bash(git commit -m 'FIX: OmenTTS speak_async -> speak \\(AttributeError\\) *)",
+      "Bash(python main.py --version)",
+      "Bash(python -m unittest discover tests/ -v)",
+      "Bash(python -m unittest tests/test_smoke -v)",
+      "Bash(git commit -m 'TESTS: all passing \\(3/3\\), no fixes needed *)"
     ]
   }
 }
