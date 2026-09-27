@@ -7,6 +7,8 @@ psutil>=5.9.0
 apscheduler>=3.10.0
 pyttsx3>=2.90
 SpeechRecognition>=3.10.0
+# PyAudio emulation is provided locally by pyaudio.py via sounddevice on Python 3.14+
+# PyAudio>=0.2.14
 sounddevice>=0.4.6
 feedparser>=6.0.10
 pypdf>=4.0.0
@@ -16,5 +18,12 @@ pyautogui>=0.9.54
 pynput>=1.7.6
 python-dotenv>=1.0.0
 qasync>=0.27.0
+Pillow>=10.0.0
+# Optional local semantic memory; OMEN falls back to SQLite when unavailable.
+chromadb>=0.5.0
+sentence-transformers>=3.0.0
+# Optional Gmail read-only OAuth integration.
+google-api-python-client>=2.140.0
+google-auth-oauthlib>=1.2.0
 pytest>=8.0.0
 pytest-asyncio>=0.23.0

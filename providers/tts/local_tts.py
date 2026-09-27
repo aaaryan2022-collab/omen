@@ -122,11 +122,11 @@ class TTSController(TTSProvider):
             try:
                 text, rate, volume = self._speak_queue.get(timeout=1.0)
                 if self._interrupt_event.is_set():
-                    self._interrupt_event.clear()
                     try:
                         self._engine.stop()
                     except Exception:
                         pass
+                    self._interrupt_event.clear()
 
                 if self.is_available and text.strip():
                     self._speak_text(text, rate, volume)

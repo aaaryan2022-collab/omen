@@ -51,7 +51,11 @@ class ReadInboxTool(BaseTool):
                     success=False,
                     message="Email provider not configured. Using mock data.",
                 )
-            emails = provider.get_inbox(max_emails=max_emails, unread_only=unread_only)
+            emails = (
+                provider.get_unread(limit=max_emails)
+                if unread_only
+                else provider.get_inbox(limit=max_emails)
+            )
             if not emails:
                 return ToolResult(success=True, message="No emails found.")
             summary = "\n".join(
@@ -81,7 +85,7 @@ class SearchEmailTool(BaseTool):
                     success=False,
                     message="Email provider not configured.",
                 )
-            emails = provider.search_emails(keyword, max_results=max_results)
+            emails = provider.search(keyword, limit=max_results)
             if not emails:
                 return ToolResult(success=True, message=f"No emails matching '{keyword}'.")
             summary = "\n".join(

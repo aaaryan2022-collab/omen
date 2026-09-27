@@ -60,13 +60,17 @@ class Planner:
         plan.id = f"plan_{hash(original_query) % (10 ** 8)}"
         order = 0
         for tc in tool_calls:
-            tool_name = tc.get("name", tc.get("tool", "unknown"))
-            args = tc.get("arguments", tc.get("args", {}))
+            if isinstance(tc, dict):
+                tool_name = tc.get("name", tc.get("tool", tc.get("tool_name", "unknown")))
+                args = tc.get("arguments", tc.get("args", {}))
+            else:
+                tool_name = getattr(tc, "tool_name", getattr(tc, "name", getattr(tc, "tool", "unknown")))
+                args = getattr(tc, "arguments", getattr(tc, "args", {}))
             step = PlanStep(
                 id=f"step_{order}",
                 objective=f"Execute {tool_name}",
                 tool=tool_name,
-                arguments=args,
+                arguments=args if isinstance(args, dict) else {},
                 risk_level=self._estimate_risk(tool_name),
                 requires_confirmation=self._needs_confirmation(tool_name),
                 order=order,

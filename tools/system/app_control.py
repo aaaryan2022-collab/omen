@@ -40,14 +40,17 @@ class OpenApplicationTool(BaseTool):
             if path_or_args:
                 full_cmd.append(path_or_args)
 
-            # Use os.startfile for Windows protocols or shell execution
-            if cmd.startswith("start "):
-                os.system(cmd)
+            # Use os.startfile or subprocess safely
+            if hasattr(os, "startfile") and (os.path.exists(cmd) or (path_or_args and os.path.exists(path_or_args))):
+                if path_or_args and os.path.exists(path_or_args):
+                    os.startfile(path_or_args)
+                else:
+                    os.startfile(cmd)
             elif shutil.which(cmd) is not None or os.path.exists(cmd):
-                subprocess.Popen(full_cmd, shell=True)
+                subprocess.Popen(full_cmd, shell=False)
             else:
-                # Try generic windows start
-                os.system(f'start "" {" ".join(full_cmd)}')
+                # Try Windows shell execution with argument list
+                subprocess.Popen(["cmd.exe", "/c", "start", "", *full_cmd], shell=False)
 
             logger.info(f"Opened application: {application} ({cmd})")
             return ToolResult(

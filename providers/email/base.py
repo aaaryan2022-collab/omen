@@ -58,3 +58,23 @@ class EmailProvider(ABC):
         pass
 
 
+def get_email_provider() -> EmailProvider:
+    """Return the configured email provider without exposing credentials to tools."""
+    from app.config import config
+
+    if config.email_provider.lower() == "mock" or config.mock_mode:
+        from providers.email.mock_email import MockEmailProvider
+
+        return MockEmailProvider()
+
+    if config.email_provider.lower() == "gmail":
+        from providers.email.gmail_provider import GmailProvider
+
+        return GmailProvider()
+
+    raise RuntimeError(
+        f"Email provider '{config.email_provider}' is not configured. "
+        "Use mock mode or configure an account first."
+    )
+
+

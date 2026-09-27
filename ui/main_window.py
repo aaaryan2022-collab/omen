@@ -1,42 +1,134 @@
-
+# ============================================
 """
-Main application window: sidebar, content stack, context bar, emergency stop.
+Main Application Window for OMEN.
+Features Holographic Command Deck, Continuous Conversational Voice AI,
+Multimodal Vision, Task Board, and Hardware Telemetry.
 """
 
+import sys
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget,
     QLabel, QPushButton, QStatusBar, QFrame, QSizePolicy,
 )
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, QThread, Signal, QTimer
 from PySide6.QtGui import QFont, QKeySequence, QShortcut
 from core.events import get_event_bus, EventType
 from core.agent import Agent
 from ui.sidebar import Sidebar
 from ui.dashboard import DashboardView
 from ui.chat import ChatView
-from ui.styles.palette import PRIMARY, BACKGROUND_DARK, TEXT_PRIMARY, SPACING_DEFAULT, SPACING_LARGE, SPACING_XLARGE
+from ui.views.tasks_view import TasksView
+from ui.views.reminders_view import RemindersView
+from ui.views.vision_view import VisionView
+from ui.views.activity_view import ActivityView
+from ui.views.settings_view import SettingsView
+from voice.stt import OmenSTT
+from voice.tts import OmenTTS
+from ui.styles.palette import PRIMARY, SECONDARY, SUCCESS, ERROR, BACKGROUND_DARK
+
+
+class VoiceWorker(QThread):
+    """Capture one microphone utterance without blocking the Qt event loop."""
+
+    transcript = Signal(str)
+    unavailable = Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._listener = None
+
+    def run(self):
+        self._listener = OmenSTT()
+        if not self._listener.is_available:
+            self.unavailable.emit("No usable microphone backend is available.")
+            return
+        text = self._listener.listen_once()
+        if text and text.strip():
+            self.transcript.emit(text.strip())
+        else:
+            self.unavailable.emit(self._listener.last_error or "No speech was detected.")
+
+    def cancel(self):
+        if self._listener:
+            self._listener.stop()
+
+
+class VoiceMeter(QThread):
+    """Read a low-cost microphone level stream for the ARC Core animation."""
+
+    level = Signal(float)
+
+    def run(self):
+        try:
+            import sounddevice as sd
+
+            def on_audio(indata, frames, time_info, status):
+                del frames, time_info, status
+                try:
+                    samples = memoryview(indata).cast("h")
+                    if samples:
+                        rms = (sum(float(sample) ** 2 for sample in samples) / len(samples)) ** 0.5
+                        self.level.emit(min(1.0, rms / 8000.0))
+                except Exception:
+                    self.level.emit(0.0)
+
+            with sd.RawInputStream(
+                samplerate=16000,
+                blocksize=512,
+                channels=1,
+                dtype="int16",
+                callback=on_audio,
+            ):
+                while not self.isInterruptionRequested():
+                    self.msleep(35)
+        except Exception:
+            self.level.emit(0.0)
+
+    def stop(self):
+        self.requestInterruption()
+        self.wait(800)
+
+
+class AgentWorker(QThread):
+    """Run an agent request away from the GUI thread."""
+
+    completed = Signal(object)
+    failed = Signal(str)
+
+    def __init__(self, agent: Agent, prompt: str, parent=None):
+        super().__init__(parent)
+        self._agent = agent
+        self._prompt = prompt
+
+    def run(self):
+        try:
+            self.completed.emit(self._agent.process(self._prompt))
+        except Exception as exc:
+            self.failed.emit(str(exc))
 
 
 class MainWindow(QMainWindow):
     """
-    Primary OMEN desktop window.
+    Primary Holographic OMEN Desktop Command Deck.
     """
 
     def __init__(self, agent: Agent, parent=None):
         super().__init__(parent)
         self._agent = agent
+        self._continuous_voice_active = False
         self._setup_window()
         self._build_ui()
         self._connect_signals()
 
     def _setup_window(self):
-        self.setWindowTitle("OMEN — AI Assistant")
-        self.setMinimumSize(1200, 700)
-        self.resize(1400, 800)
-        self.setStyleSheet("background-color: #0A0E17;")
+        self.setWindowTitle("OMEN | Autonomous Command Deck")
+        self.setMinimumSize(1240, 740)
+        self.resize(1440, 850)
+        self.setObjectName("mainWindow")
 
         # Central widget
         central = QWidget()
+        central.setObjectName("centralWidget")
         self.setCentralWidget(central)
         self._central_layout = QHBoxLayout(central)
         self._central_layout.setContentsMargins(0, 0, 0, 0)
@@ -47,57 +139,109 @@ class MainWindow(QMainWindow):
         self._emergency_banner.setHidden(True)
         self._emergency_banner.setStyleSheet("""
             QLabel {
-                background-color: rgba(220, 38, 38, 0.9);
+                background-color: rgba(239, 68, 68, 0.95);
                 color: white;
-                font-weight: bold;
-                font-size: 14pt;
-                padding: 12px;
+                font-weight: 900;
+                font-size: 13pt;
+                padding: 10px;
+                letter-spacing: 2px;
                 text-align: center;
             }
         """)
 
         # Status bar
-        self.statusBar().setStyleSheet("background-color: #111827; color: #8B9CB8;")
+        self.statusBar().setStyleSheet("background-color: #070B12; color: #64748B; border-top: 1px solid #162238;")
+        self.statusBar().showMessage("OMEN Core Armed · Ready")
 
     def _build_ui(self):
-        # Sidebar
+        # 1. Sidebar
         self._sidebar = Sidebar()
-        self._sidebar.setFixedWidth(240)
         self._central_layout.addWidget(self._sidebar)
 
-        # Content area
+        # 2. Main Content Stack
         content_container = QWidget()
         content_layout = QVBoxLayout(content_container)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
 
-        # Emergency banner at top
+        # Top Header Bar
+        topbar = QFrame()
+        topbar.setObjectName("topbar")
+        topbar_layout = QHBoxLayout(topbar)
+        topbar_layout.setContentsMargins(24, 12, 24, 12)
+        topbar_layout.setSpacing(14)
+
+        deck_label = QLabel("OMEN")
+        deck_label.setObjectName("topbarBrand")
+        topbar_layout.addWidget(deck_label)
+
+        mode_label = QLabel("QUANTUM REASONING MATRIX  ·  LOCAL HARDWARE BOUND")
+        mode_label.setObjectName("topbarMode")
+        topbar_layout.addWidget(mode_label)
+        topbar_layout.addStretch()
+
+        self._top_status = QLabel("● ALL SYSTEMS OPERATIONAL")
+        self._top_status.setObjectName("topbarStatus")
+        topbar_layout.addWidget(self._top_status)
+        content_layout.addWidget(topbar)
+
+        # Emergency banner
         content_layout.addWidget(self._emergency_banner)
 
-        # Stack of views
+        # Stack of all main views
         self._stack = QStackedWidget()
         content_layout.addWidget(self._stack)
-
         self._central_layout.addWidget(content_container)
 
-        # Initialize views
+        # Initialize all views
         self._dashboard = DashboardView(self._agent)
         self._chat = ChatView(self._agent)
-        self._stack.addWidget(self._dashboard)
-        self._stack.addWidget(self._chat)
+        self._tasks_view = TasksView(self._agent)
+        self._reminders_view = RemindersView()
+        self._vision_view = VisionView(self._agent)
+        self._activity_view = ActivityView()
+        self._settings_view = SettingsView()
+
+        self._views_map = {
+            "dashboard": self._dashboard,
+            "chat": self._chat,
+            "tasks": self._tasks_view,
+            "reminders": self._reminders_view,
+            "vision": self._vision_view,
+            "activity": self._activity_view,
+            "settings": self._settings_view,
+        }
+
+        for view in self._views_map.values():
+            self._stack.addWidget(view)
+
+        self._stack.setCurrentWidget(self._dashboard)
 
     def _connect_signals(self):
+        # Sidebar page switching
         self._sidebar.page_changed.connect(self._switch_page)
 
-        # Emergency stop shortcut
-        from PySide6.QtGui import QShortcut
+        # Chat view interactions
+        self._chat.message_sent.connect(self._process_chat_message)
+        self._chat.voice_requested.connect(self._capture_voice_single)
+        self._chat.voice_cancelled.connect(self._cancel_voice)
+
+        # Dashboard quick triggers
+        self._dashboard.voice_requested.connect(self._capture_voice_single)
+        self._dashboard.continuous_voice_requested.connect(self._toggle_continuous_voice)
+        self._dashboard.chat_requested.connect(lambda: self._switch_page("chat"))
+        self._dashboard.vision_requested.connect(lambda: self._switch_page("vision"))
+        self._dashboard.tasks_requested.connect(lambda: self._switch_page("tasks"))
+        self._dashboard.briefing_requested.connect(self._trigger_daily_briefing)
+
+        # Global emergency stop shortcuts
         esc_shortcut = QShortcut(QKeySequence("Ctrl+Shift+Escape"), self)
         esc_shortcut.activated.connect(self._trigger_emergency)
 
         alt_q_shortcut = QShortcut(QKeySequence("Ctrl+Alt+Q"), self)
         alt_q_shortcut.activated.connect(self._trigger_emergency)
 
-        # Event bus for state changes
+        # Event Bus Subscriptions
         try:
             bus = get_event_bus()
             bus.subscribe(EventType.AGENT_STATE_CHANGE, self._on_agent_state)
@@ -106,28 +250,132 @@ class MainWindow(QMainWindow):
             pass
 
     def _switch_page(self, page_id: str):
-        pages = {
-            "dashboard": self._dashboard,
-            "chat": self._chat,
-        }
-        if page_id in pages:
-            self._stack.addWidget(pages[page_id])
-            self._stack.setCurrentWidget(pages[page_id])
+        if page_id in self._views_map:
+            target_widget = self._views_map[page_id]
+            self._stack.setCurrentWidget(target_widget)
+            self._sidebar.set_active_page(page_id)
+
+    def _process_chat_message(self, prompt: str):
+        """Process a text chat command without blocking the interface."""
+        self._chat._send_button.setEnabled(False)
+        self._dashboard.set_voice_mode("thinking")
+        self._agent_worker = AgentWorker(self._agent, prompt, self)
+        self._agent_worker.completed.connect(self._on_agent_completed)
+        self._agent_worker.failed.connect(self._on_agent_failed)
+        self._agent_worker.finished.connect(lambda: self._chat._send_button.setEnabled(True))
+        self._agent_worker.start()
+
+    def _toggle_continuous_voice(self):
+        """Toggles continuous full-duplex conversational voice mode."""
+        if self._continuous_voice_active:
+            self._continuous_voice_active = False
+            self._cancel_voice()
+            self.statusBar().showMessage("2-Way Voice Dialogue Deactivated")
+        else:
+            self._continuous_voice_active = True
+            self.statusBar().showMessage("🎙 2-Way Conversational Voice Mode Active (Speak naturally)")
+            self._capture_voice_turn()
+
+    def _capture_voice_single(self):
+        self._continuous_voice_active = False
+        self._capture_voice_turn()
+
+    def _capture_voice_turn(self):
+        """Starts one listening turn in the conversational voice pipeline."""
+        self._chat.show_voice_overlay()
+        self._dashboard.set_voice_mode("listening")
+        self._chat.set_voice_state("Listening")
+
+        # Start live audio meter for holographic core
+        self._voice_meter = VoiceMeter(self)
+        self._voice_meter.level.connect(self._dashboard._core.set_voice_level)
+        self._voice_meter.start()
+
+        # Start speech recognition thread
+        self._voice_worker = VoiceWorker(self)
+        self._voice_worker.transcript.connect(self._on_voice_transcript)
+        self._voice_worker.unavailable.connect(self._on_voice_unavailable)
+        self._voice_worker.start()
+
+    def _cancel_voice(self):
+        self._continuous_voice_active = False
+        if hasattr(self, "_voice_worker") and self._voice_worker.isRunning():
+            self._voice_worker.cancel()
+            self._voice_worker.requestInterruption()
+        self._stop_voice_meter()
+        self._dashboard.set_voice_mode("idle")
+        self._chat.hide_voice_overlay()
+        self._dashboard._core.set_voice_level(0.0)
+
+    def _on_voice_transcript(self, transcript: str):
+        self._stop_voice_meter()
+        self._dashboard.set_voice_mode("thinking")
+        self._chat.set_voice_state("Thinking")
+        self._chat.hide_voice_overlay()
+
+        # Add user message to chat & process through Agent
+        self._chat.add_user_message(transcript)
+        self._agent_worker = AgentWorker(self._agent, transcript, self)
+        self._agent_worker.completed.connect(self._on_agent_completed)
+        self._agent_worker.failed.connect(self._on_agent_failed)
+        self._agent_worker.start()
+
+    def _on_voice_unavailable(self, reason: str):
+        self._stop_voice_meter()
+        self._dashboard.set_voice_mode("idle")
+        self._chat.hide_voice_overlay()
+        self.statusBar().showMessage(f"Voice input ended: {reason}")
+        if self._continuous_voice_active:
+            # Re-listen after short delay in continuous mode
+            QTimer.singleShot(1500, self._capture_voice_turn)
+
+    def _on_agent_completed(self, result):
+        response = result.get("response_text") or "Command executed successfully."
+        plan = result.get("plan")
+        steps = plan.steps if plan else None
+
+        self._chat.add_assistant_message(response, plan_steps=steps)
+        self._dashboard.set_voice_mode("speaking")
+
+        # Play vocal response
+        if self._agent.tts and self._agent.tts.is_available:
+            self._agent.tts.speak_async(response)
+
+        # Estimate speech duration to seamlessly listen back in continuous mode
+        words = len(response.split())
+        est_duration_ms = max(2000, int((words / 2.8) * 1000) + 800)
+
+        QTimer.singleShot(est_duration_ms, self._on_speech_finished)
+
+    def _on_speech_finished(self):
+        self._dashboard.set_voice_mode("idle")
+        if self._continuous_voice_active:
+            # Seamless conversational turn — auto-listen for the human reply!
+            self._capture_voice_turn()
+
+    def _stop_voice_meter(self):
+        if hasattr(self, "_voice_meter") and self._voice_meter.isRunning():
+            self._voice_meter.stop()
+
+    def _on_agent_failed(self, error: str):
+        self._chat.add_assistant_message(f"Execution error: {error}")
+        self._dashboard.set_voice_mode("error")
+        QTimer.singleShot(3000, lambda: self._dashboard.set_voice_mode("idle"))
+
+    def _trigger_daily_briefing(self):
+        res = self._agent.executor.registry.execute_tool("get_morning_briefing", {})
+        if res.success:
+            self._chat.add_assistant_message(res.message)
+            self._switch_page("chat")
+            if self._agent.tts and self._agent.tts.is_available:
+                self._agent.tts.speak_async(res.message)
 
     def _trigger_emergency(self):
         from safety.emergency_stop import get_emergency_stop
         stop = get_emergency_stop()
         stop.trigger()
         self._emergency_banner.setHidden(False)
-        self._chat.add_assistant_message("🛑 EMERGENCY STOP triggered. All operations halted. Use CTRL+SHIFT+ESC or CTRL+ALT+Q to reset.")
-
-    def _on_agent_state(self, event):
-        state = event.payload.get("state", "")
-        if state == "ERROR":
-            self._emergency_banner.setHidden(False)
-
-    def _on_error(self, event):
-        self._emergency_banner.setHidden(False)
+        self._chat.add_assistant_message("🛑 EMERGENCY PROTOCOL ACTIVATED. All background jobs and tool actions halted.")
 
     def reset_emergency(self):
         from safety.emergency_stop import get_emergency_stop
@@ -135,11 +383,16 @@ class MainWindow(QMainWindow):
         stop.reset()
         self._emergency_banner.setHidden(True)
 
+    def _on_agent_state(self, event):
+        state = event.payload.get("state", "")
+        if state == "ERROR":
+            self.statusBar().showMessage("Agent encountered an error.", 5000)
+
+    def _on_error(self, event):
+        err = event.payload.get("error", "An error occurred.")
+        self.statusBar().showMessage(f"System notice: {err}", 5000)
+
     def keyPressEvent(self, event):
-        from PySide6.QtCore import Qt
-        if event.key() == Qt.Key.Key_Escape:
-            if self._emergency_banner.isVisible():
-                self.reset_emergency()
+        if event.key() == Qt.Key.Key_Escape and self._emergency_banner.isVisible():
+            self.reset_emergency()
         super().keyPressEvent(event)
-
-

@@ -31,29 +31,26 @@ class NotificationService:
         # Fallback to Windows PowerShell toast or print
         try:
             import sys
+            import subprocess
             if sys.platform == "win32":
                 # Clean strings for PowerShell execution
-                safe_title = title.replace('"', '`"')
-                safe_msg = message.replace('"', '`"')
-                ps_script = f"""
-                [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
-                [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
-                $template = @"
-                <toast>
-                    <visual>
-                        <binding template="ToastGeneric">
-                            <text>{safe_title}</text>
-                            <text>{safe_msg}</text>
-                        </binding>
-                    </visual>
-                </toast>
-"@
-                $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-                $xml.LoadXml($template)
-                $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
-                [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("OMEN Assistant").Show($toast)
-                """
-                # Run asynchronously in background if desired, or skip if silent
+                safe_title = title.replace('"', '`"').replace('$', '`$')
+                safe_msg = message.replace('"', '`"').replace('$', '`$')
+                ps_script = (
+                    "[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null; "
+                    "[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null; "
+                    f'$template = @"\n<toast><visual><binding template="ToastGeneric"><text>{safe_title}</text><text>{safe_msg}</text></binding></visual></toast>\n"@; '
+                    "$xml = New-Object Windows.Data.Xml.Dom.XmlDocument; "
+                    "$xml.LoadXml($template); "
+                    "$toast = [Windows.UI.Notifications.ToastNotification]::new($xml); "
+                    '[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("OMEN Assistant").Show($toast)'
+                )
+                subprocess.Popen(
+                    ["powershell", "-NoProfile", "-NonInteractive", "-Command", ps_script],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                )
         except Exception as e:
             logger.debug(f"Toast notification fallback failed: {e}")
 

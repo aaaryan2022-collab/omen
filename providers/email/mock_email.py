@@ -23,7 +23,7 @@ class MockEmailProvider(EmailProvider):
             EmailMessage(
                 id="m_1",
                 from_address="professor.smith@university.edu",
-                to_address=["me@personal.com"],
+                to_addresses=["me@personal.com"],
                 subject="CS601: Advanced Algorithms - Midterm Results Published",
                 body="Dear Student,\n\nThe midterm results for Advanced Algorithms are now available on the course portal. Please review and reach out if you notice any discrepancies.\n\nBest,\nProf. Smith",
                 date=now - timedelta(hours=2),
@@ -35,7 +35,7 @@ class MockEmailProvider(EmailProvider):
             EmailMessage(
                 id="m_2",
                 from_address="manager.jones@company.com",
-                to_address=["me@company.com"],
+                to_addresses=["me@company.com"],
                 subject="Urgent: Project Deliverable Review - Friday 6PM",
                 body="Hi,\n\nPlease ensure the Q4 deliverable draft is prepared for review meeting on Friday at 6 PM. We need final sign-off before deployment.\n\nThanks,\nJones",
                 date=now - timedelta(hours=5),
@@ -47,7 +47,7 @@ class MockEmailProvider(EmailProvider):
             EmailMessage(
                 id="m_3",
                 from_address="newsletter@github.com",
-                to_address=["me@personal.com"],
+                to_addresses=["me@personal.com"],
                 subject="GitHub Weekly: What's New in Python Ecosystem",
                 body="Check out the latest updates in the Python ecosystem this week, including new async features and performance improvements in popular frameworks.",
                 date=now - timedelta(hours=24),
@@ -59,7 +59,7 @@ class MockEmailProvider(EmailProvider):
             EmailMessage(
                 id="m_4",
                 from_address="no-reply@amazon.in",
-                to_address=["me@personal.com"],
+                to_addresses=["me@personal.com"],
                 subject="Your OMEN Laptop order has shipped!",
                 body="Your recent order (Order #OMEN29384) has been dispatched and is expected to arrive by next week.",
                 date=now - timedelta(days=1),
@@ -71,7 +71,7 @@ class MockEmailProvider(EmailProvider):
             EmailMessage(
                 id="m_5",
                 from_address="HR@company.com",
-                to_address=["me@company.com"],
+                to_addresses=["me@company.com"],
                 subject="Action Required: Annual Benefits Enrollment",
                 body="The annual benefits enrollment window opens today. Please review your selections and confirm before October 15th.",
                 date=now - timedelta(days=2),

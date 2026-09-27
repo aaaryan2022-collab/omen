@@ -8,6 +8,7 @@ import psutil
 from pydantic import BaseModel, Field
 from tools.base import BaseTool, ToolResult
 from app.constants import RiskLevel
+from app.hardware import get_hardware_profile
 
 
 class GetSystemInfoTool(BaseTool):
@@ -19,7 +20,9 @@ class GetSystemInfoTool(BaseTool):
         try:
             cpu_percent = psutil.cpu_percent(interval=0.1)
             mem = psutil.virtual_memory()
-            disk = psutil.disk_usage("/")
+            import os
+            root_drive = os.path.splitdrive(os.path.abspath("."))[0] + "\\" if os.name == "nt" else "/"
+            disk = psutil.disk_usage(root_drive)
             battery = psutil.sensors_battery()
 
             info = {
@@ -40,6 +43,27 @@ class GetSystemInfoTool(BaseTool):
             return ToolResult(success=True, data=info, message=summary)
         except Exception as e:
             return ToolResult(success=False, error=str(e), message="Failed to retrieve system information")
+
+
+class GetHardwareProfileTool(BaseTool):
+    name = "get_hardware_profile"
+    description = "Reports the host CPU, RAM, NVIDIA GPU, VRAM, and OMEN resource policy."
+    risk_level = RiskLevel.LOW
+
+    def execute(self, **kwargs) -> ToolResult:
+        profile = get_hardware_profile()
+        data = {
+            "cpu_threads": profile.cpu_threads,
+            "ram_gb": profile.ram_gb,
+            "gpu_name": profile.gpu_name,
+            "gpu_vram_mb": profile.gpu_vram_mb,
+            "gpu_vram_used_mb": profile.gpu_vram_used_mb,
+            "driver_version": profile.driver_version,
+            "recommended_context_tokens": profile.recommended_context_tokens,
+            "recommended_output_tokens": profile.recommended_output_tokens,
+        }
+        gpu = profile.gpu_name or "CPU-only fallback"
+        return ToolResult(success=True, data=data, message=f"{gpu}; {profile.ram_gb} GB RAM; {profile.cpu_threads} CPU threads.")
 
 
 class GetCpuUsageTool(BaseTool):

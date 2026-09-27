@@ -97,6 +97,24 @@ class OmenScheduler:
         except Exception as e:
             logger.error(f"Failed to schedule periodic job: {e}")
 
+    def schedule_cron(self, func: Callable, job_id: str, hour: int, minute: int = 0, **kwargs):
+        """Schedule a job at a local wall-clock time every day."""
+        if not self.is_running:
+            self.start()
+        try:
+            self._scheduler.add_job(
+                func,
+                trigger=CronTrigger(hour=hour, minute=minute),
+                id=job_id,
+                replace_existing=True,
+                **kwargs,
+            )
+            logger.info("Scheduled daily cron job %s at %02d:%02d", job_id, hour, minute)
+            return True
+        except Exception as exc:
+            logger.error("Failed to schedule cron job: %s", exc)
+            return False
+
     def remove_job(self, job_id: str) -> bool:
         """Removes a scheduled job."""
         try:
@@ -117,5 +135,17 @@ class OmenScheduler:
                 callback(reminder_id, title, message)
             except Exception as e:
                 log.error(f"Reminder callback error: {e}")
+
+
+_scheduler_instance: Optional[OmenScheduler] = None
+
+
+def get_scheduler() -> OmenScheduler:
+    """Return the process-wide background scheduler."""
+    global _scheduler_instance
+    if _scheduler_instance is None:
+        _scheduler_instance = OmenScheduler()
+        _scheduler_instance.start()
+    return _scheduler_instance
 
 

@@ -10,6 +10,7 @@ import requests
 from providers.llm.base import LLMProvider, LLMResponse, ToolCallRequest
 from app.config import config
 from app.logging_config import logger
+from app.hardware import get_hardware_profile
 
 
 class OllamaProvider(LLMProvider):
@@ -20,10 +21,23 @@ class OllamaProvider(LLMProvider):
         base_url: Optional[str] = None,
         model: Optional[str] = None,
         timeout: Optional[int] = None,
+        auto_select_model: bool = True,
     ):
         self.base_url = (base_url or config.ollama_base_url).rstrip("/")
         self.model = model or config.ollama_model
         self.timeout = timeout or config.ollama_timeout
+        if auto_select_model:
+            self.select_available_model()
+
+    def select_available_model(self) -> str:
+        """Use the configured model when installed, otherwise a local installed model."""
+        models = self.list_models()
+        if self.model in models:
+            return self.model
+        if models:
+            self.model = models[0]
+            logger.warning("Configured Ollama model unavailable; using %s", self.model)
+        return self.model
 
     def check_connection(self) -> bool:
         """Returns True if Ollama service is reachable and responding."""
@@ -56,6 +70,7 @@ class OllamaProvider(LLMProvider):
         """Executes a non-streaming chat completion."""
         url = f"{self.base_url}/api/chat"
         temp = temperature if temperature is not None else config.ollama_temperature
+        hardware = get_hardware_profile()
 
         payload: Dict[str, Any] = {
             "model": self.model,
@@ -63,6 +78,8 @@ class OllamaProvider(LLMProvider):
             "stream": False,
             "options": {
                 "temperature": temp,
+                "num_ctx": min(config.ollama_context_tokens, hardware.recommended_context_tokens),
+                "num_predict": min(config.ollama_max_output_tokens, hardware.recommended_output_tokens),
             },
         }
 
@@ -93,7 +110,7 @@ class OllamaProvider(LLMProvider):
                             args = json.loads(args)
                         except Exception:
                             args = {}
-                    tool_calls.append(ToolCallRequest(name=name, arguments=args))
+                    tool_calls.append({"name": name, "arguments": args})
 
             # Fallback JSON parsing if no native tool calls but content contains tool block
             if not tool_calls:
@@ -126,6 +143,7 @@ class OllamaProvider(LLMProvider):
         """Streams token chunks from Ollama API, returning the aggregated LLMResponse."""
         url = f"{self.base_url}/api/chat"
         temp = temperature if temperature is not None else config.ollama_temperature
+        hardware = get_hardware_profile()
 
         payload: Dict[str, Any] = {
             "model": self.model,
@@ -133,6 +151,8 @@ class OllamaProvider(LLMProvider):
             "stream": True,
             "options": {
                 "temperature": temp,
+                "num_ctx": min(config.ollama_context_tokens, hardware.recommended_context_tokens),
+                "num_predict": min(config.ollama_max_output_tokens, hardware.recommended_output_tokens),
             },
         }
 
@@ -177,7 +197,7 @@ class OllamaProvider(LLMProvider):
                                         args = json.loads(args)
                                     except Exception:
                                         args = {}
-                                native_tool_calls.append(ToolCallRequest(name=name, arguments=args))
+                                native_tool_calls.append({"name": name, "arguments": args})
 
                         if chunk_json.get("done"):
                             raw_final_data = chunk_json
@@ -216,13 +236,13 @@ class OllamaProvider(LLMProvider):
                 data = json.loads(match)
                 if isinstance(data, dict):
                     if "tool" in data and "arguments" in data:
-                        tool_calls.append(ToolCallRequest(name=data["tool"], arguments=data.get("arguments", {})))
+                        tool_calls.append({"name": data["tool"], "arguments": data.get("arguments", {})})
                     elif "name" in data and "arguments" in data:
-                        tool_calls.append(ToolCallRequest(name=data["name"], arguments=data.get("arguments", {})))
+                        tool_calls.append({"name": data["name"], "arguments": data.get("arguments", {})})
                     elif "tools" in data and isinstance(data["tools"], list):
                         for item in data["tools"]:
                             if "tool" in item:
-                                tool_calls.append(ToolCallRequest(name=item["tool"], arguments=item.get("arguments", {})))
+                                tool_calls.append({"name": item["tool"], "arguments": item.get("arguments", {})})
             except Exception:
                 continue
 
@@ -232,11 +252,11 @@ class OllamaProvider(LLMProvider):
                 data = json.loads(text.strip())
                 if isinstance(data, dict):
                     if "tool" in data:
-                        tool_calls.append(ToolCallRequest(name=data["tool"], arguments=data.get("arguments", {})))
+                        tool_calls.append({"name": data["tool"], "arguments": data.get("arguments", {})})
                     elif "tools" in data and isinstance(data["tools"], list):
                         for item in data["tools"]:
                             if "tool" in item:
-                                tool_calls.append(ToolCallRequest(name=item["tool"], arguments=item.get("arguments", {})))
+                                tool_calls.append({"name": item["tool"], "arguments": item.get("arguments", {})})
             except Exception:
                 pass
 

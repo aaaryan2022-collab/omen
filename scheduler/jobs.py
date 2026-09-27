@@ -32,9 +32,10 @@ class OmenJobs:
     ):
         """Schedules the morning briefing job at a specific time daily."""
         try:
-            scheduler.schedule_periodic(
+            scheduler.schedule_cron(
                 self._run_morning_briefing,
-                interval_seconds=86400,  # Daily
+                hour=hour,
+                minute=minute,
                 job_id="morning_briefing",
             )
             logger.info(f"Morning briefing scheduled at {hour}:{minute:02d}")

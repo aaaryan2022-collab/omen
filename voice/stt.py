@@ -35,6 +35,10 @@ class OmenSTT:
     def is_available(self) -> bool:
         return self._provider is not None and self._provider.is_available
 
+    @property
+    def last_error(self) -> Optional[str]:
+        return getattr(self._provider, "last_error", None) if self._provider else None
+
     def start(self, on_transcript: Optional[Callable[[str], None]] = None):
         """Starts background STT listening."""
         if not self.is_available:
@@ -58,6 +62,19 @@ class OmenSTT:
         if self._listener_thread:
             self._listener_thread.join(timeout=5.0)
         logger.info("OMEN STT stopped")
+
+    def listen_once(self) -> Optional[str]:
+        """Capture one utterance and return its transcript."""
+        if not self.is_available:
+            logger.warning("Cannot listen: microphone provider unavailable")
+            return None
+        try:
+            self._provider.start_listening()
+            result = self._provider.stop_listening()
+            return result.text if result and result.text.strip() else None
+        except Exception as exc:
+            logger.warning("Single voice capture failed: %s", exc)
+            return None
 
     def _listen_loop(self):
         """Background loop that uses provider to get transcripts."""

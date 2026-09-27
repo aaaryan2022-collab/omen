@@ -107,23 +107,27 @@ class PomodoroTimer:
             if self._pause_event.is_set():
                 continue
 
+            formatted = None
+            secs_remaining = 0
             with self._lock:
                 if self.state in (PomodoroState.WORK, PomodoroState.SHORT_BREAK, PomodoroState.LONG_BREAK):
                     self.time_remaining_secs -= 1
 
                     # Trigger tick callbacks
-                    mins = self.time_remaining_secs // 60
-                    secs = self.time_remaining_secs % 60
+                    mins = max(0, self.time_remaining_secs) // 60
+                    secs = max(0, self.time_remaining_secs) % 60
                     formatted = f"{mins:02d}:{secs:02d}"
+                    secs_remaining = self.time_remaining_secs
 
                     if self.time_remaining_secs <= 0:
                         self._handle_session_completed()
 
-            for cb in self._on_tick_callbacks:
-                try:
-                    cb(formatted, self.time_remaining_secs)
-                except Exception:
-                    pass
+            if formatted is not None:
+                for cb in self._on_tick_callbacks:
+                    try:
+                        cb(formatted, secs_remaining)
+                    except Exception:
+                        pass
 
     def _handle_session_completed(self):
         notifier = get_notification_service()

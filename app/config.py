@@ -20,10 +20,15 @@ class OmenConfig(BaseSettings):
 
     # AI / LLM Provider Settings
     ollama_base_url: str = Field(default="http://localhost:11434", description="Ollama API base URL")
-    ollama_model: str = Field(default="gemma4:31b-cloud", description="Default Ollama model name")
+    ollama_model: str = Field(default="llama3:8b-instruct-q4_K_M", description="Default local Ollama text model")
+    ollama_vision_model: str = Field(default="moondream", description="Optional local Ollama vision model")
     ollama_timeout: int = Field(default=60, description="Ollama request timeout in seconds")
     ollama_temperature: float = Field(default=0.7, description="LLM sampling temperature")
+    ollama_context_tokens: int = Field(default=4096, ge=512, le=16384, description="Maximum context sent to Ollama")
+    ollama_max_output_tokens: int = Field(default=512, ge=64, le=4096, description="Maximum generated output tokens")
     context_window_size: int = Field(default=10, description="Number of recent messages in context")
+    vector_memory_enabled: bool = Field(default=True, description="Use optional local ChromaDB memory when installed")
+    vector_memory_path: str = Field(default="data/vector_memory", description="Persistent local vector memory directory")
 
     # Voice Settings
     voice_enabled: bool = Field(default=True, description="Enable voice speech responses")
@@ -50,6 +55,8 @@ class OmenConfig(BaseSettings):
     news_region: str = Field(default="India", description="Default news region")
     mock_mode: bool = Field(default=False, description="Enable mock mode for external services")
     email_provider: str = Field(default="mock", description="Email provider: mock, gmail, outlook, imap")
+    gmail_client_secrets: str = Field(default="data/gmail_client_secret.json", description="Google OAuth client secrets path")
+    gmail_scopes: str = Field(default="https://www.googleapis.com/auth/gmail.readonly", description="Read-only Gmail OAuth scope")
 
     # UI / System Settings
     debug_mode: bool = Field(default=False, description="Enable verbose debug logging and UI features")
@@ -57,6 +64,9 @@ class OmenConfig(BaseSettings):
     start_with_windows: bool = Field(default=False, description="Auto-start OMEN on Windows login")
     first_run_completed: bool = Field(default=False, description="Whether setup wizard has been run")
     theme: str = Field(default="dark", description="UI color theme")
+    daily_briefing_enabled: bool = Field(default=True, description="Enable the daily local briefing")
+    daily_briefing_hour: int = Field(default=8, ge=0, le=23, description="Daily briefing hour")
+    daily_briefing_minute: int = Field(default=0, ge=0, le=59, description="Daily briefing minute")
 
     # Custom App Aliases
     app_aliases: dict[str, str] = Field(default_factory=lambda: dict(DEFAULT_APP_ALIASES))

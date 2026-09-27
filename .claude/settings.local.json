@@ -48,7 +48,13 @@
       "Bash(echo \"4. MACHINE PATHS: .claude/settings.json hardcodes E:\\\\\\\\OMEN — breaks on other machines.\")",
       "Bash(echo \"6. ENV HARDCODED: ALLOWED_DIRECTORIES = C:\\\\\\\\Users\\\\\\\\ARYAN... = not portable.\")",
       "Bash(git commit -m 'Supervise loophole audit; preserve structured batch access and gate controls *)",
-      "Bash(git commit -m 'DEBUGGER: fix remaining categories \\(STARK clean, tests+README, supervisor_gate+template\\) — all reported with file/line, zero silent fixes *)"
+      "Bash(git commit -m 'DEBUGGER: fix remaining categories \\(STARK clean, tests+README, supervisor_gate+template\\) — all reported with file/line, zero silent fixes *)",
+      "Bash(timeout 3 python main.py --cli)",
+      "Bash(timeout 3 python main.py --debug)",
+      "Bash(timeout 3 python main.py --wizard)",
+      "Bash(pytest tests/test_smoke.py -v)",
+      "Bash(python -m unittest discover tests/)",
+      "Bash(git commit -m 'OMEN: Full validation, tests implemented & passing, runtime modes verified, all bugs fixed *)"
     ]
   }
 }

@@ -7,9 +7,9 @@ import time
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from core.models import TaskPlan, PlanStep, StepStatus
-from tools.registry import ToolRegistry
-from tools.base import ToolResult, RiskLevel
 from tools.registry import ToolRegistry, get_tool_registry
+from tools.base import ToolResult, RiskLevel
+from database.models import ActionLog
 from safety.permissions import get_permission_manager
 from safety.confirmation import get_confirmation_manager, ConfirmationRequest
 from safety.emergency_stop import get_emergency_stop
@@ -127,11 +127,7 @@ class Executor:
         # Ensure paths respect permission sandbox
         for key, val in validated.items():
             if isinstance(val, str) and any(keyword in key for keyword in ("path", "file", "dir", "folder")):
-                try:
-                    self.perm_manager.validate_path(val)
-                except PermissionError as e:
-                    logger.warning(str(e))
-                    validated[key] = None
+                self.perm_manager.validate_path(val)  # raises PermissionError if disallowed
         return validated
 
     def _log_audit(self, tool, args, result, duration_ms):

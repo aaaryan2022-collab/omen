@@ -20,6 +20,14 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+# Configure UTF-8 for console output on Windows to prevent UnicodeEncodeError
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from app.config import config, reload_config
 from app.logging_config import logger, setup_logging
 from core.events import get_event_bus
@@ -175,7 +183,7 @@ def run_gui():
 
     # If emergency stop was active, show banner
     from safety.emergency_stop import get_emergency_stop
-    if get_emergency_stop().is_stopped:
+    if get_emergency_stop().is_stopped():
         window._emergency_banner.setHidden(False)
 
     window.show()
@@ -230,13 +238,13 @@ def run_self_test():
         try:
             result = fn()
             if result:
-                print(f"  ✓ {name}")
+                print(f"  [OK] {name}")
                 tests_passed += 1
             else:
-                print(f"  FAIL {name} (no result)")
+                print(f"  [FAIL] {name} (no result)")
                 tests_failed += 1
         except Exception as e:
-            print(f"  FAIL {name}: {e}")
+            print(f"  [FAIL] {name}: {e}")
             tests_failed += 1
 
     # Config test

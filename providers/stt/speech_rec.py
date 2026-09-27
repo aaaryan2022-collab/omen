@@ -4,6 +4,7 @@ Speech-to-Text provider using SpeechRecognition (local/offline capable).
 """
 
 import threading
+import time
 from typing import Optional
 from datetime import datetime
 from providers.stt.base import STTProvider, SpeechResult, STTState
@@ -15,6 +16,12 @@ try:
     _HAVE_SPEECH_RECOGNITION = True
 except ImportError:
     _HAVE_SPEECH_RECOGNITION = False
+
+try:
+    import sounddevice as sd
+    _HAVE_SOUNDDEVICE = True
+except ImportError:
+    _HAVE_SOUNDDEVICE = False
 
 
 class SpeechRecProvider(STTProvider):
@@ -28,27 +35,41 @@ class SpeechRecProvider(STTProvider):
         self._microphone = None
         self._listener_thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
+        self._last_error: Optional[str] = None
 
         if _HAVE_SPEECH_RECOGNITION:
             try:
                 self._recognizer = sr.Recognizer()
                 self._recognizer.energy_threshold = config.stt_energy_threshold
                 self._recognizer.pause_threshold = config.stt_pause_threshold
-                self._microphone = sr.Microphone(device_index=config.microphone_index)
-                # Adjust for ambient noise
-                logger.info("Adjusting for ambient noise...")
-                with self._microphone as source:
-                    self._recognizer.adjust_for_ambient_noise(source, duration=1.0)
+                try:
+                    self._microphone = sr.Microphone(device_index=config.microphone_index)
+                    with self._microphone as source:
+                        self._recognizer.adjust_for_ambient_noise(source, duration=0.3)
+                except Exception as mic_err:
+                    self._microphone = None
+                    if _HAVE_SOUNDDEVICE:
+                        logger.debug("Falling back to sounddevice capture: %s", mic_err)
+                    else:
+                        logger.warning("No microphone input source available: %s", mic_err)
             except Exception as e:
-                logger.warning(f"SpeechRecognition init warning: {e}")
+                logger.debug("SpeechRecognition initialization notice: %s", e)
 
     @property
     def is_available(self) -> bool:
-        return _HAVE_SPEECH_RECOGNITION and self._recognizer is not None
+        return (
+            _HAVE_SPEECH_RECOGNITION
+            and self._recognizer is not None
+            and (self._microphone is not None or _HAVE_SOUNDDEVICE)
+        )
 
     def get_state(self) -> STTState:
         with self._lock:
             return self._state
+
+    @property
+    def last_error(self) -> Optional[str]:
+        return self._last_error
 
     def _set_state(self, state: STTState):
         with self._lock:
@@ -61,6 +82,7 @@ class SpeechRecProvider(STTProvider):
             raise RuntimeError("SpeechRecognition not available")
 
         self._stop_event.clear()
+        self._last_error = None
         self._set_state(STTState.LISTENING)
         self._listener_thread = threading.Thread(
             target=self._listen_loop, daemon=True, name="STTListener"
@@ -83,8 +105,11 @@ class SpeechRecProvider(STTProvider):
         while not self._stop_event.is_set():
             try:
                 self._set_state(STTState.TRANSCRIBING)
-                with self._microphone as source:
-                    audio = self._recognizer.listen(source, timeout=10, phrase_time_limit=30)
+                if self._microphone is not None:
+                    with self._microphone as source:
+                        audio = self._recognizer.listen(source, timeout=10, phrase_time_limit=30)
+                else:
+                    audio = self._listen_with_sounddevice()
 
                 if self._stop_event.is_set():
                     break
@@ -97,9 +122,13 @@ class SpeechRecProvider(STTProvider):
                     try:
                         import faster_whisper
                         text = self._faster_whisper_transcribe(audio)
-                    except Exception:
-                        logger.warning("Speech recognition failed, no speech detected or error")
-                        continue
+                    except Exception as exc:
+                        self._last_error = (
+                            "Audio was captured, but transcription failed. "
+                            "Install faster-whisper for local transcription or check network access."
+                        )
+                        logger.warning("Speech transcription failed: %s", exc)
+                        break
 
                 if text and text.strip():
                     confidence = 0.85  # SpeechRecognition doesn't provide confidence for Google
@@ -115,8 +144,31 @@ class SpeechRecProvider(STTProvider):
                     break
 
             except Exception as e:
+                self._last_error = str(e)
                 logger.debug(f"STT listen error: {e}")
                 self._set_state(STTState.IDLE)
+
+    def _listen_with_sounddevice(self):
+        """Capture one short utterance without requiring the PyAudio package."""
+        chunks = []
+
+        def callback(indata, frames, time_info, status):
+            del frames, time_info, status
+            chunks.append(bytes(indata))
+
+        with sd.RawInputStream(
+            samplerate=16000,
+            blocksize=1024,
+            channels=1,
+            dtype="int16",
+            callback=callback,
+        ):
+            deadline = time.monotonic() + 5.0
+            while time.monotonic() < deadline and not self._stop_event.is_set():
+                time.sleep(0.05)
+        if not chunks:
+            raise RuntimeError("No microphone audio was captured")
+        return sr.AudioData(b"".join(chunks), 16000, 2)
 
     def _faster_whisper_transcribe(self, audio) -> str:
         """Fallback transcription using faster-whisper."""

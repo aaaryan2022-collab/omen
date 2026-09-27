@@ -95,9 +95,88 @@ class ToolRegistry:
 
 # Global Tool Registry instance
 _registry_instance = ToolRegistry()
+_builtins_loaded = False
+
+
+def _load_builtin_tools() -> None:
+    """Load and register the built-in tools once on first registry access."""
+    global _builtins_loaded
+    if _builtins_loaded:
+        return
+
+    from tools.browser.browser_ops import LaunchUrlTool, ReadWebpageTool, WebSearchTool
+    from tools.email.email_tools import (
+        DraftEmailTool,
+        ReadInboxTool,
+        SearchEmailTool,
+        SummarizeEmailTool,
+    )
+    from tools.filesystem.file_ops import (
+        CopyFileTool,
+        CreateFileTool,
+        CreateFolderTool,
+        DeleteFileTool,
+        MoveFileTool,
+        ReadFileTool,
+        RenameFileTool,
+        SearchFilesTool,
+    )
+    from tools.media.media_ops import SetVolumeTool, TakeScreenshotTool
+    from tools.news.news_tools import GetMorningBriefingTool, GetNewsHeadlinesTool, SearchNewsTool
+    from tools.productivity.pomodoro_tools import (
+        GetPomodoroStatusTool,
+        PausePomodoroTool,
+        ResumePomodoroTool,
+        StartPomodoroTool,
+        StopPomodoroTool,
+    )
+    from tools.productivity.reminder_tools import CancelReminderTool, ListRemindersTool, SetReminderTool
+    from tools.productivity.task_tools import (
+        AddTaskTool,
+        CompleteTaskTool,
+        DeleteTaskTool,
+        ListTasksTool,
+        SearchTasksTool,
+    )
+    from tools.system.app_control import CloseApplicationTool, OpenApplicationTool
+    from tools.system.input_control import ClickMouseTool, MoveCursorTool, TypeTextTool
+    from tools.system.power_control import LockWorkstationTool, SleepSystemTool
+    from tools.system.system_info import (
+        GetBatteryStatusTool,
+        GetCpuUsageTool,
+        GetDiskUsageTool,
+        GetMemoryUsageTool,
+        GetRunningProcessesTool,
+        GetSystemInfoTool,
+        GetHardwareProfileTool,
+    )
+    from tools.vision import AnalyzeScreenTool, ClickScreenTargetTool
+
+    tool_classes = (
+        LaunchUrlTool, ReadWebpageTool, WebSearchTool,
+        DraftEmailTool, ReadInboxTool, SearchEmailTool, SummarizeEmailTool,
+        CopyFileTool, CreateFileTool, CreateFolderTool, DeleteFileTool,
+        MoveFileTool, ReadFileTool, RenameFileTool, SearchFilesTool,
+        SetVolumeTool, TakeScreenshotTool,
+        GetMorningBriefingTool, GetNewsHeadlinesTool, SearchNewsTool,
+        GetPomodoroStatusTool, PausePomodoroTool, ResumePomodoroTool,
+        StartPomodoroTool, StopPomodoroTool,
+        CancelReminderTool, ListRemindersTool, SetReminderTool,
+        AddTaskTool, CompleteTaskTool, DeleteTaskTool, ListTasksTool, SearchTasksTool,
+        CloseApplicationTool, OpenApplicationTool, LockWorkstationTool, SleepSystemTool,
+        ClickMouseTool, MoveCursorTool, TypeTextTool,
+        GetBatteryStatusTool, GetCpuUsageTool, GetDiskUsageTool,
+        GetMemoryUsageTool, GetRunningProcessesTool, GetSystemInfoTool,
+        GetHardwareProfileTool,
+        AnalyzeScreenTool, ClickScreenTargetTool,
+    )
+    for tool_class in tool_classes:
+        _registry_instance.register(tool_class())
+    _builtins_loaded = True
 
 
 def get_tool_registry() -> ToolRegistry:
+    _load_builtin_tools()
     return _registry_instance
 
 

@@ -27,9 +27,16 @@ class ContextBuilder:
 
         # Add relevant memories (max 3)
         memories = self.memory_manager.search(user_query)
-        relevant_memories = [m for m in memories if m.is_active][:3]
-        if relevant_memories:
-            mem_text = "\n".join([f"User info: {m.key}: {m.value}" for m in relevant_memories])
+        mem_items = []
+        for m in memories:
+            if isinstance(m, dict):
+                text = m.get("text", "")
+                if text:
+                    mem_items.append(text)
+            elif getattr(m, "is_active", True):
+                mem_items.append(f"User info: {m.key}: {m.value}")
+        if mem_items:
+            mem_text = "\n".join(mem_items[:3])
             prompt.append({"role": "system", "content": f"Relevant memory: {mem_text}"})
 
         # Add recent conversation context (limited size)

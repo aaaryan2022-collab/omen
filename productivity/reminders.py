@@ -12,6 +12,7 @@ from productivity.tasks import parse_natural_date
 from productivity.notifications import get_notification_service
 from app.constants import ReminderStatus
 from app.logging_config import logger
+from scheduler.scheduler import get_scheduler
 
 
 class ReminderManager:
@@ -21,6 +22,8 @@ class ReminderManager:
         self.repo = repo or ReminderRepository()
         self.notification_service = get_notification_service()
         self._on_fire_callbacks: List[Callable[[Reminder], None]] = []
+        self._scheduler = get_scheduler()
+        self._restore_scheduled_reminders()
 
     def register_on_fire(self, callback: Callable[[Reminder], None]):
         """Registers a callback to be notified when a reminder fires (e.g. for TTS / UI sound)."""
@@ -56,8 +59,28 @@ class ReminderManager:
             associated_task_id=associated_task_id,
         )
         saved = self.repo.create(reminder)
+        self._schedule(saved)
         logger.info(f"Reminder set: #{saved.id} - '{saved.title}' at {saved.trigger_time.strftime('%Y-%m-%d %H:%M')}")
         return saved
+
+    def _restore_scheduled_reminders(self):
+        for reminder in self.repo.list_active():
+            if reminder.trigger_time > datetime.now():
+                self._schedule(reminder)
+
+    def _schedule(self, reminder: Reminder):
+        self._scheduler.schedule_reminder(
+            reminder_id=reminder.id,
+            trigger_time=reminder.trigger_time,
+            title=reminder.title,
+            message=reminder.message,
+            on_fire=self._fire_scheduled_reminder,
+        )
+
+    def _fire_scheduled_reminder(self, reminder_id: int, title: str, message: str):
+        reminder = self.repo.get_by_id(reminder_id)
+        if reminder and reminder.status == ReminderStatus.SCHEDULED:
+            self.fire_reminder(reminder)
 
     def list_active(self) -> List[Reminder]:
         return self.repo.list_active()
@@ -94,7 +117,10 @@ class ReminderManager:
         return self.repo.dismiss(reminder_id)
 
     def delete_reminder(self, reminder_id: int) -> bool:
-        return self.repo.delete(reminder_id)
+        deleted = self.repo.delete(reminder_id)
+        if deleted:
+            self._scheduler.remove_job(f"reminder_{reminder_id}")
+        return deleted
 
 
 _reminder_manager_instance: Optional[ReminderManager] = None

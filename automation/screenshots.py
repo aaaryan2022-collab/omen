@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from typing import Optional, List
 from dataclasses import dataclass
-from app.config import DATA_DIR
+from app.constants import DATA_DIR
 from app.logging_config import logger
 
 try:
@@ -64,18 +64,12 @@ def capture_screen(
 
             sct_img = sct.grab(monitor)
 
-            # Save with PIL if available for better quality
+            # Save with PIL if available, or native mss tools
             if _HAVE_PIL:
                 img = Image.frombytes("RGB", sct_img.size, sct_img.rgb)
                 img.save(output_path, "PNG")
             else:
-                # Fallback: save raw
-                with open(output_path, "wb") as f:
-                    import struct
-                    # This is a simplified save — PIL is preferred
-                    pass
-                logger.warning("PIL not available, cannot save screenshot raw buffer")
-                return None
+                mss.tools.to_png(sct_img.rgb, sct_img.size, output=output_path)
 
             info = ScreenshotInfo(
                 path=output_path,

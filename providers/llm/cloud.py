@@ -117,7 +117,7 @@ class MockLLMProvider(LLMProvider):
         if not tools:
             return []
         q = query.lower()
-        detected: List[ToolCallRequest] = []
+        detected: List[Dict[str, Any]] = []
         tool_name_map = {
             "add task": "add_task",
             "create task": "add_task",
@@ -140,11 +140,7 @@ class MockLLMProvider(LLMProvider):
         }
         for phrase, tool_name in tool_name_map.items():
             if phrase in q:
-                detected.append(ToolCallRequest(
-                    tool_name=tool_name,
-                    arguments={},
-                    id=f"call_{hash(query + tool_name) % 100000}",
-                ))
+                detected.append({"name": tool_name, "arguments": {}})
         return detected
 
 
