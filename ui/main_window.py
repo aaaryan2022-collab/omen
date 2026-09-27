@@ -339,7 +339,7 @@ class MainWindow(QMainWindow):
 
         # Play vocal response
         if self._agent.tts and self._agent.tts.is_available:
-            self._agent.tts.speak_async(response)
+            self._agent.tts.speak(response)
 
         # Estimate speech duration to seamlessly listen back in continuous mode
         words = len(response.split())
@@ -368,7 +368,7 @@ class MainWindow(QMainWindow):
             self._chat.add_assistant_message(res.message)
             self._switch_page("chat")
             if self._agent.tts and self._agent.tts.is_available:
-                self._agent.tts.speak_async(res.message)
+                self._agent.tts.speak(res.message)
 
     def _trigger_emergency(self):
         from safety.emergency_stop import get_emergency_stop
