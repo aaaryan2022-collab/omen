@@ -237,15 +237,6 @@ class MainWindow(QMainWindow):
         self._holo_bg.setGeometry(central.rect())
         self._holo_bg.lower()  # send behind siblings
 
-    def resizeEvent(self, event):
-        super(MainWindow, self).resizeEvent(event)
-        try:
-            central = self.centralWidget()
-            if central and hasattr(self, '_holo_bg'):
-                self._holo_bg.setGeometry(central.rect())
-        except Exception:
-            pass
-
         # Emergency stop banner
         self._emergency_banner = QLabel("🛑 EMERGENCY STOP ACTIVE — Press CTRL+SHIFT+ESC or CTRL+ALT+Q to reset")
         self._emergency_banner.setHidden(True)
@@ -264,6 +255,15 @@ class MainWindow(QMainWindow):
         # Status bar
         self.statusBar().setStyleSheet("background-color: #070B12; color: #64748B; border-top: 1px solid #162238;")
         self.statusBar().showMessage("OMEN Core Armed · Ready")
+
+    def resizeEvent(self, event):
+        super(MainWindow, self).resizeEvent(event)
+        try:
+            central = self.centralWidget()
+            if central and hasattr(self, '_holo_bg'):
+                self._holo_bg.setGeometry(central.rect())
+        except Exception:
+            pass
 
     def _build_ui(self):
         # 1. Sidebar
