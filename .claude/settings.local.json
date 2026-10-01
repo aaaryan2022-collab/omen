@@ -73,7 +73,12 @@
       "Bash(python -m pytest tests/test_modules.py::test_computer_control -v)",
       "Bash(python -m pytest -v)",
       "Bash(python -m pytest tests/ -v)",
-      "Bash(python -c \"from ui.main_window import MainWindow; from ui.orb import CommandCore; print\\('UI imports OK'\\); import ui.chat; import ui.dashboard; print\\('UI modules OK'\\)\")"
+      "Bash(python -c \"from ui.main_window import MainWindow; from ui.orb import CommandCore; print\\('UI imports OK'\\); import ui.chat; import ui.dashboard; print\\('UI modules OK'\\)\")",
+      "Bash(python -m pytest tests/test_modules.py -q)",
+      "Bash(timeout 30 python -m pytest tests/test_modules.py -q --tb=short)",
+      "Bash(git commit -m 'fix: restore _emergency_banner to _setup_window, deduplicate resizeEvent, fix init order *)",
+      "Bash(timeout 20 python -m pytest tests/test_modules.py -q --tb=line)",
+      "Bash(git commit -m 'chore: sync settings.local + chroma vector db after GUI verification *)"
     ]
   }
 }
