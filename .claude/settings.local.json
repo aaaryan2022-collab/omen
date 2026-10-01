@@ -64,7 +64,16 @@
       "Bash(python -m unittest tests/test_smoke -v)",
       "Bash(git commit -m 'TESTS: all passing \\(3/3\\), no fixes needed *)",
       "Bash(python -m unittest tests.test_smoke -v)",
-      "Bash(git commit -m 'COMMIT: working tree sync — settings.local.json updated *)"
+      "Bash(git commit -m 'COMMIT: working tree sync — settings.local.json updated *)",
+      "Bash(git commit -m 'data: update db + vector memory after full working run \\(all modes verified\\) *)",
+      "Bash(pip list *)",
+      "Bash(pip show *)",
+      "Bash(python -m pytest tests/test_modules.py -v)",
+      "Bash(pip install *)",
+      "Bash(python -m pytest tests/test_modules.py::test_computer_control -v)",
+      "Bash(python -m pytest -v)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python -c \"from ui.main_window import MainWindow; from ui.orb import CommandCore; print\\('UI imports OK'\\); import ui.chat; import ui.dashboard; print\\('UI modules OK'\\)\")"
     ]
   }
 }
