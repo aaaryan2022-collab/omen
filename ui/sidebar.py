@@ -34,6 +34,7 @@ class Sidebar(QWidget):
         header_label = QLabel("◉ OMEN")
         header_label.setObjectName("brandLabel")
         header_label.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
+        header_label.setStyleSheet(f"color: {PRIMARY}; background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00F0FF, stop:1 #A355FF); font-size: 18pt; font-weight: 900; letter-spacing: 4px;")
         brand_box.addWidget(header_label)
 
         subtitle = QLabel("ARTIFICIAL INTELLIGENCE")

@@ -39,9 +39,13 @@ class ChatView(QWidget):
         # Header Section
         header = QHBoxLayout()
         title_box = QVBoxLayout()
-        title = QLabel("NEURAL CHAT MATRIX")
+        title = QLabel("◉ NEURAL CHAT MATRIX")
         title.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
-        title.setStyleSheet(f"color: {PRIMARY}; letter-spacing: 2px;")
+        title.setStyleSheet(f"""
+            color: {PRIMARY};
+            letter-spacing: 2px;
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00F0FF, stop:0.6 #A355FF, stop:1 #00F0FF);
+        """)
         title_box.addWidget(title)
 
         self._status_label = QLabel("○ AGENT READY · STANDBY")
@@ -125,7 +129,7 @@ class ChatView(QWidget):
         # Enter key filter
         self._input_field.installEventFilter(self)
 
-        # Voice Listening Overlay
+        # Voice Listening Overlay — 3D glass overlay
         self._build_voice_overlay(layout)
 
     def _build_voice_overlay(self, parent_layout):

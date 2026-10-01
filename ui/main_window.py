@@ -10,7 +10,8 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget,
     QLabel, QPushButton, QStatusBar, QFrame, QSizePolicy,
 )
-from PySide6.QtCore import Qt, QSize, QThread, Signal, QTimer
+from PySide6.QtCore import Qt, QSize, QThread, Signal, QTimer, QPropertyAnimation, QEasingCurve, QPointF, QRect
+from PySide6.QtGui import QFont, QKeySequence, QPainter, QPen, QColor, QLinearGradient, QRadialGradient, QBrush
 from PySide6.QtGui import QFont, QKeySequence, QShortcut
 from core.events import get_event_bus, EventType
 from core.agent import Agent
@@ -24,7 +25,105 @@ from ui.views.activity_view import ActivityView
 from ui.views.settings_view import SettingsView
 from voice.stt import OmenSTT
 from voice.tts import OmenTTS
-from ui.styles.palette import PRIMARY, SECONDARY, SUCCESS, ERROR, BACKGROUND_DARK
+from ui.styles.palette import (
+    PRIMARY, SECONDARY, SUCCESS, ERROR, BACKGROUND_DARK,
+    PRIMARY_GLOW, SECONDARY_GLOW, TERTIARY,
+    HOLOGRAPHIC_SHADOW, VOXEL_DEPTH,
+)
+
+
+class HoloBackground(QWidget):
+    """3D holographic deep-space grid with animated scan lines and parallax depth."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self._phase = 0.0
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self.update)
+        self._timer.start(40)  # ~25 FPS subtle animation
+
+    def paintEvent(self, event):
+        del event
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        w, h = self.width(), self.height()
+
+        # Deep space background
+        bg_grad = QRadialGradient(w / 2, h / 2, max(w, h) * 0.7)
+        bg_grad.setColorAt(0.0, QColor(8, 14, 26))
+        bg_grad.setColorAt(0.5, QColor(5, 10, 18))
+        bg_grad.setColorAt(1.0, QColor(3, 6, 12))
+        painter.fillRect(self.rect(), QBrush(bg_grad))
+
+        # Holographic grid (floor grid perspective)
+        self._phase += 0.008
+        grid_color = QColor(0, 240, 255, 18)
+        pen = QPen(grid_color, 1)
+        painter.setPen(pen)
+        grid_spacing = 40
+        horizon = h * 0.42
+        for i in range(12):
+            depth = (i + 1) / 12.0
+            y = horizon + (h - horizon) * depth * depth
+            x_center = w / 2
+            width_at_depth = w * (0.3 + 0.7 * depth)
+            alpha = int(40 + 30 * depth)
+            pen.setColor(QColor(0, 240, 255, alpha))
+            painter.setPen(pen)
+            painter.drawLine(int(x_center - width_at_depth / 2), int(y), int(x_center + width_at_depth / 2), int(y))
+        for x in range(-w, w * 2, grid_spacing):
+            dx = x - w / 2
+            depth_factor = 1.0 - abs(dx) / (w * 1.5)
+            if depth_factor <= 0:
+                continue
+            y_start = horizon
+            y_end = h
+            alpha = int(15 + 25 * depth_factor * depth_factor)
+            pen.setColor(QColor(0, 240, 255, alpha))
+            painter.setPen(pen)
+            painter.drawLine(x, int(y_start), int(x + dx * 0.3), int(y_end))
+
+        # Floating holographic particles (stars)
+        import math
+        for idx in range(60):
+            px = (math.sin(idx * 1.7 + self._phase * 0.5) * 0.5 + 0.5) * w
+            py = (math.cos(idx * 2.3 + self._phase * 0.3) * 0.5 + 0.5) * h
+            size = 1.0 + math.sin(idx + self._phase) * 0.5
+            alpha = int(40 + 60 * math.sin(idx * 0.8 + self._phase * 1.2))
+            particle_color = QColor(0, 240, 255, max(0, min(255, alpha)))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(QBrush(particle_color))
+            painter.drawEllipse(QRectF(px - size / 2, py - size / 2, size, size))
+
+        # Chromatic scan line sweep
+        scan_y = (self._phase * 80) % (h + 40) - 20
+        scan_grad = QLinearGradient(0, scan_y - 30, 0, scan_y + 30)
+        scan_grad.setColorAt(0.0, QColor(0, 240, 255, 0))
+        scan_grad.setColorAt(0.5, QColor(0, 240, 255, 25))
+        scan_grad.setColorAt(1.0, QColor(0, 240, 255, 0))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QBrush(scan_grad))
+        painter.drawRect(0, scan_y - 30, w, 60)
+
+        # Secondary violet scan (offset)
+        scan_y2 = (self._phase * 60 + 200) % (h + 40) - 20
+        scan_grad2 = QLinearGradient(0, scan_y2 - 20, 0, scan_y2 + 20)
+        scan_grad2.setColorAt(0.0, QColor(112, 0, 255, 0))
+        scan_grad2.setColorAt(0.5, QColor(112, 0, 255, 15))
+        scan_grad2.setColorAt(1.0, QColor(112, 0, 255, 0))
+        painter.setBrush(QBrush(scan_grad2))
+        painter.drawRect(0, scan_y2 - 20, w, 40)
+
+        # Vignette
+        vignette = QRadialGradient(w / 2, h / 2, w * 0.28)
+        vignette.setColorAt(0.0, QColor(0, 0, 0, 0))
+        vignette.setColorAt(1.0, QColor(0, 0, 0, 100))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QBrush(vignette))
+        painter.drawRect(self.rect())
+
+        painter.end()
 
 
 class VoiceWorker(QThread):
@@ -126,9 +225,14 @@ class MainWindow(QMainWindow):
         self.resize(1440, 850)
         self.setObjectName("mainWindow")
 
-        # Central widget
+        # Central widget with holographic background
         central = QWidget()
         central.setObjectName("centralWidget")
+        central_layout = QVBoxLayout(central)
+        central_layout.setContentsMargins(0, 0, 0, 0)
+        central_layout.setSpacing(0)
+        self._holo_bg = HoloBackground(central)
+        central_layout.addWidget(self._holo_bg, stretch=1)
         self.setCentralWidget(central)
         self._central_layout = QHBoxLayout(central)
         self._central_layout.setContentsMargins(0, 0, 0, 0)
@@ -164,28 +268,70 @@ class MainWindow(QMainWindow):
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
 
-        # Top Header Bar
+        # Top Header Bar — holographic chromatic gradient
         topbar = QFrame()
         topbar.setObjectName("topbar")
+        topbar.setStyleSheet("""
+            QFrame#topbar {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #0A0F19, stop:1 #060A11);
+                border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+                padding: 6px 16px;
+            }
+        """)
         topbar_layout = QHBoxLayout(topbar)
         topbar_layout.setContentsMargins(24, 12, 24, 12)
         topbar_layout.setSpacing(14)
 
-        deck_label = QLabel("OMEN")
+        # Left brand with chromatic glow
+        deck_label = QLabel("◉ OMEN")
         deck_label.setObjectName("topbarBrand")
+        deck_label.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
+        deck_label.setStyleSheet(f"""
+            color: {PRIMARY};
+            font-weight: 900;
+            letter-spacing: 4px;
+        """)
         topbar_layout.addWidget(deck_label)
 
-        mode_label = QLabel("QUANTUM REASONING MATRIX  ·  LOCAL HARDWARE BOUND")
+        mode_label = QLabel("AUTONOMOUS COMMAND DECK  ·  LOCAL HARDWARE BOUND")
         mode_label.setObjectName("topbarMode")
+        mode_label.setStyleSheet(f"""
+            color: {SECONDARY_LIGHT};
+            font-size: 8pt;
+            font-weight: 700;
+            letter-spacing: 2px;
+        """)
         topbar_layout.addWidget(mode_label)
         topbar_layout.addStretch()
 
         self._top_status = QLabel("● ALL SYSTEMS OPERATIONAL")
         self._top_status.setObjectName("topbarStatus")
+        self._top_status.setStyleSheet(f"""
+            color: {SUCCESS};
+            font-size: 9pt;
+            font-weight: bold;
+            background-color: rgba(0, 255, 157, 0.1);
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            border-radius: 6px;
+            padding: 4px 10px;
+        """)
         topbar_layout.addWidget(self._top_status)
         content_layout.addWidget(topbar)
 
-        # Emergency banner
+        # Emergency banner with glassmorphism
+        self._emergency_banner.setStyleSheet("""
+            QLabel {
+                background-color: rgba(239, 68, 68, 0.85);
+                color: white;
+                font-weight: 900;
+                font-size: 13pt;
+                padding: 10px;
+                letter-spacing: 2px;
+                text-align: center;
+                border: 1px solid rgba(255, 0, 85, 0.5);
+                border-radius: 6px;
+            }
+        """)
         content_layout.addWidget(self._emergency_banner)
 
         # Stack of all main views

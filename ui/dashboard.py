@@ -41,10 +41,14 @@ class DashboardView(QWidget):
         # 1. Header Bar with Brand & Live Clock
         header = QHBoxLayout()
         brand_box = QVBoxLayout()
-        brand_label = QLabel("OMEN COMMAND DECK")
+        brand_label = QLabel("◉ OMEN COMMAND DECK")
         brand_label.setObjectName("hudBrand")
         brand_label.setFont(QFont("Segoe UI", 20, QFont.Weight.Bold))
-        brand_label.setStyleSheet(f"color: {PRIMARY}; letter-spacing: 3px;")
+        brand_label.setStyleSheet(f"""
+            color: {PRIMARY};
+            letter-spacing: 3px;
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00F0FF, stop:1 #A355FF);
+        """)
         brand_box.addWidget(brand_label)
 
         subtitle = QLabel("LOCAL AUTONOMOUS INTELLIGENCE & HARDWARE MATRIX")
