@@ -26,7 +26,7 @@ from ui.views.settings_view import SettingsView
 from voice.stt import OmenSTT
 from voice.tts import OmenTTS
 from ui.styles.palette import (
-    PRIMARY, SECONDARY, SUCCESS, ERROR, BACKGROUND_DARK,
+    PRIMARY, SECONDARY, SECONDARY_LIGHT, SUCCESS, ERROR, BACKGROUND_DARK,
     PRIMARY_GLOW, SECONDARY_GLOW, TERTIARY,
     HOLOGRAPHIC_SHADOW, VOXEL_DEPTH,
 )
@@ -225,18 +225,26 @@ class MainWindow(QMainWindow):
         self.resize(1440, 850)
         self.setObjectName("mainWindow")
 
-        # Central widget with holographic background
+        # Central widget: single container with horizontal layout
+        # Holographic background lives behind everything
         central = QWidget()
         central.setObjectName("centralWidget")
-        central_layout = QVBoxLayout(central)
-        central_layout.setContentsMargins(0, 0, 0, 0)
-        central_layout.setSpacing(0)
-        self._holo_bg = HoloBackground(central)
-        central_layout.addWidget(self._holo_bg, stretch=1)
         self.setCentralWidget(central)
         self._central_layout = QHBoxLayout(central)
         self._central_layout.setContentsMargins(0, 0, 0, 0)
         self._central_layout.setSpacing(0)
+        self._holo_bg = HoloBackground(central)
+        self._holo_bg.setGeometry(central.rect())
+        self._holo_bg.lower()  # send behind siblings
+
+    def resizeEvent(self, event):
+        super(MainWindow, self).resizeEvent(event)
+        try:
+            central = self.centralWidget()
+            if central and hasattr(self, '_holo_bg'):
+                self._holo_bg.setGeometry(central.rect())
+        except Exception:
+            pass
 
         # Emergency stop banner
         self._emergency_banner = QLabel("🛑 EMERGENCY STOP ACTIVE — Press CTRL+SHIFT+ESC or CTRL+ALT+Q to reset")
