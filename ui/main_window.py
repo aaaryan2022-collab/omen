@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget,
     QLabel, QPushButton, QStatusBar, QFrame, QSizePolicy,
 )
-from PySide6.QtCore import Qt, QSize, QThread, Signal, QTimer, QPropertyAnimation, QEasingCurve, QPointF, QRect
+from PySide6.QtCore import Qt, QSize, QThread, Signal, QTimer, QPropertyAnimation, QEasingCurve, QPointF, QRect, QRectF
 from PySide6.QtGui import QFont, QKeySequence, QPainter, QPen, QColor, QLinearGradient, QRadialGradient, QBrush
 from PySide6.QtGui import QFont, QKeySequence, QShortcut
 from core.events import get_event_bus, EventType
