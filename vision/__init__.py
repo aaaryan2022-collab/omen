@@ -21,8 +21,8 @@ class VisionModule:
 
     def screenshot(self, region: Optional[Dict[str, int]] = None) -> Optional[Image.Image]:
         try:
-            with self._sct.grab(region or self._sct.monitors[-1]) as img:
-                return Image.frombytes("RGB", img.size, img.rgb)
+            img = self._sct.grab(region or self._sct.monitors[-1])
+            return Image.frombytes("RGB", img.size, img.rgb)
         except Exception as exc:
             logger.error(f"Vision screenshot failed: {exc}")
             return None
