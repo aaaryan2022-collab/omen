@@ -30,8 +30,6 @@ class OmenSTT:
             self._provider = SpeechRecProvider()
         # AUTO-START
         self.start()
-            if not self._provider.is_available:
-                logger.warning("SpeechRecognition not available — voice mode disabled")
 
     @property
     def is_available(self) -> bool:
