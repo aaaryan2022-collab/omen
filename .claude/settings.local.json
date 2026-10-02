@@ -78,7 +78,16 @@
       "Bash(timeout 30 python -m pytest tests/test_modules.py -q --tb=short)",
       "Bash(git commit -m 'fix: restore _emergency_banner to _setup_window, deduplicate resizeEvent, fix init order *)",
       "Bash(timeout 20 python -m pytest tests/test_modules.py -q --tb=line)",
-      "Bash(git commit -m 'chore: sync settings.local + chroma vector db after GUI verification *)"
+      "Bash(git commit -m 'chore: sync settings.local + chroma vector db after GUI verification *)",
+      "Bash(git commit -m 'fix: add QRectF import + painter.end\\(\\) to HoloBackground paintEvent *)",
+      "Bash(python)",
+      "Bash(python -m py_compile main.py core/agent.py core/executor.py ui/main_window.py automation/keyboard.py automation/mouse.py voice/tts.py voice/stt.py app/config.py security/permissions.py)",
+      "Bash(git commit -m 'fix: vision screenshot context-manager bug \\(mss grab not context manager\\) *)",
+      "Bash(git commit -m 'fix: smart click \\(vision/element_detect\\) + observe-verify loop \\(core/observation_loop\\) + wire into CLI \\(main.py\\) *)",
+      "Bash(timeout 30 python -m pytest tests/test_modules.py -q)",
+      "Bash(awk '{print $9, $5}')",
+      "Bash(cat C:\\\\Users\\\\ARYAN\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\E--OMEN\\\\4d198aea-882c-4a5f-9499-9e50bbe1d52a\\\\tasks\\\\b0ekmhrb5.output 2>/dev/null | tail -n 20 || echo \"output not readable\")",
+      "Bash(git commit -m 'chore: sync settings, chroma vector DB, remove stale identity/observer __init__ *)"
     ]
   }
 }
