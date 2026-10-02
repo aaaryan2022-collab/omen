@@ -34,6 +34,9 @@ from core.events import get_event_bus
 from core.agent import Agent
 
 
+from core.observation_loop import ObservationLoop
+
+
 def run_cli():
     """Interactive CLI mode for OMEN."""
     print("OMEN — CLI Mode (type 'exit' or 'quit' to end)")
@@ -41,6 +44,7 @@ def run_cli():
 
     setup_logging(debug=True)
     agent = Agent()
+    observer = ObservationLoop()
 
     # Pre-warm brain with mock config if needed
     while True:
@@ -61,10 +65,16 @@ def run_cli():
             continue
 
         try:
+            # Observe screen before action
+            before = observer.observe_screen()
             result = agent.process(user_input)
             print(f"\nOMEN: {result.get('response_text')}")
             if result.get('plan') and result.get('plan').steps:
                 print(f"[Plan: {len(result.get('plan').steps)} step(s)]")
+            # Observe result after action and verify (Spec #9 / #8)
+            after = observer.observe_screen()
+            verified = observer.verify_action_result("expected change")
+            print(f"[Verified: {verified}]")
         except Exception as e:
             print(f"Error: {e}")
 
