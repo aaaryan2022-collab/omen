@@ -1,193 +1,235 @@
 # ============================================
 """
-Premium navigation sidebar — compact, editorial, human-crafted.
-Collapsed/expanded states, subtle hover, dark charcoal + steel blue.
+OMEN Navigation Sidebar — Compact, Collapsible, Premium Editorial Layout.
+Includes:
+- OMEN logo / orb
+- "+ New Conversation" action button
+- Navigation items: Chat, Tasks, Calendar, Notes, Files, System, Settings
+- Smooth toggle between expanded (220px) and collapsed (64px) states.
 """
 
+from typing import List, Tuple
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QSizePolicy, QFrame,
+    QSizePolicy, QFrame, QButtonGroup,
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve
 from PySide6.QtGui import QFont, QCursor
+from ui.orb import OmenOrb
 from ui.styles.palette import (
-    PRIMARY, SECONDARY, SUCCESS, TEXT_PRIMARY, TEXT_SECONDARY,
-    BACKGROUND_DARK, BACKGROUND_MEDIUM, BACKGROUND_CARD,
-    BORDER, BORDER_ACTIVE, TEXT_DIM, FONT_FAMILY, FONT_MONO
+    PRIMARY, PRIMARY_DIM, SECONDARY, SUCCESS, TEXT_PRIMARY, TEXT_SECONDARY,
+    TEXT_DIM, BACKGROUND_DARK, BACKGROUND_MEDIUM, BACKGROUND_CARD,
+    BORDER, BORDER_ACTIVE, FONT_FAMILY,
+    WARNING, ERROR,
 )
 
 
 class Sidebar(QWidget):
-    """Premium compact sidebar with OMEN orb and navigation."""
+    """Refined collapsible desktop sidebar with OMEN branding and navigation."""
 
     page_changed = Signal(str)
+    new_conversation_requested = Signal()
+    collapse_toggled = Signal(bool)
 
-    NAV_ITEMS = [
-        ("dashboard", "Command Deck", "⚡"),
-        ("chat", "Chat Matrix", "💬"),
-        ("tasks", "Tasks", "📋"),
-        ("reminders", "Reminders", "⏰"),
-        ("vision", "Vision", "👁"),
-        ("activity", "Activity", "📊"),
+    NAV_ITEMS: List[Tuple[str, str, str]] = [
+        ("chat", "Chat", "💬"),
+        ("tasks", "Tasks", "✓"),
+        ("calendar", "Calendar", "📅"),
+        ("notes", "Notes", "📝"),
+        ("files", "Files", "📁"),
+        ("system", "System", "⚡"),
         ("settings", "Settings", "⚙"),
     ]
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("sidebar")
+        self._is_collapsed = False
+        self._buttons = {}
+        self._active_page = "chat"
+
         self.setFixedWidth(220)
+        self._build_ui()
+
+    def _build_ui(self):
         self.setStyleSheet(f"""
-            QWidget {{
-                background: {BACKGROUND_DARK};
-                border-right: 1px solid {BORDER};
+            QWidget#sidebar {{
+                background-color: {BACKGROUND_DARK};
+                border-right: 1px solid rgba(255, 255, 255, 0.06);
             }}
             QLabel {{
                 color: {TEXT_SECONDARY};
                 font-family: {FONT_FAMILY};
-                font-size: 11px;
             }}
-            QPushButton {{
+            QPushButton.navBtn {{
                 background: transparent;
                 color: {TEXT_SECONDARY};
                 text-align: left;
-                padding: 10px 14px;
+                padding: 9px 12px;
                 border-radius: 8px;
                 font-size: 13px;
                 font-family: {FONT_FAMILY};
-                border: none;
+                font-weight: 500;
+                border: 1px solid transparent;
             }}
-            QPushButton:hover {{
-                background: {BACKGROUND_MEDIUM};
+            QPushButton.navBtn:hover {{
+                background: rgba(255, 255, 255, 0.05);
                 color: {TEXT_PRIMARY};
             }}
-            QPushButton:pressed {{
-                background: {BACKGROUND_CARD};
-            }}
-            QPushButton:checked {{
-                background: {PRIMARY_DIM};
-                color: {PRIMARY};
+            QPushButton.navBtn:checked {{
+                background: rgba(0, 210, 238, 0.10);
+                color: #00D2EE;
                 font-weight: 600;
-                border-left: 2px solid {PRIMARY};
+                border-left: 2px solid #00D2EE;
+                border-radius: 4px 8px 8px 4px;
             }}
         """)
 
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(12, 16, 12, 16)
-        lay.setSpacing(6)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 16, 10, 14)
+        layout.setSpacing(6)
 
-        # OMEN Orb + Title
-        top = QWidget()
-        top_lay = QHBoxLayout(top)
-        top_lay.setContentsMargins(0, 0, 0, 0)
-        top_lay.setSpacing(10)
+        # 1. Header with OMEN Brand & Collapse Toggle
+        header_row = QHBoxLayout()
+        header_row.setContentsMargins(4, 0, 4, 0)
+        header_row.setSpacing(8)
 
-        self.orb = QLabel("◉")
-        self.orb.setFont(QFont(FONT_FAMILY, 20, QFont.Weight.Bold))
-        self.orb.setStyleSheet(f"color: {PRIMARY}; letter-spacing: -2px;")
-        top_lay.addWidget(self.orb)
+        self._orb_icon = OmenOrb(size=26, show_label=False)
+        header_row.addWidget(self._orb_icon)
 
-        title = QLabel("OMEN")
-        title.setFont(QFont(FONT_FAMILY, 16, QFont.Weight.Bold))
-        title.setStyleSheet(f"color: {TEXT_PRIMARY}; letter-spacing: 1.5px;")
-        top_lay.addWidget(title)
+        self._brand_title = QLabel("OMEN")
+        self._brand_title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
+        self._brand_title.setStyleSheet(f"color: {TEXT_PRIMARY}; letter-spacing: 1.5px;")
+        header_row.addWidget(self._brand_title)
 
-        lay.addWidget(top)
-        lay.addSpacing(8)
+        header_row.addStretch()
 
-        # Status badge
-        status_frame = QFrame()
-        status_frame.setStyleSheet(f"""
-            QFrame {{
-                background: {PRIMARY_DIM};
-                border: 1px solid {PRIMARY};
-                border-radius: 6px;
-                padding: 4px 8px;
+        self._collapse_btn = QPushButton("◀")
+        self._collapse_btn.setFixedSize(24, 24)
+        self._collapse_btn.setToolTip("Collapse Sidebar")
+        self._collapse_btn.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                color: #71717A;
+                border: none;
+                font-size: 10px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background: rgba(255, 255, 255, 0.06);
+                color: #EDEDEF;
+            }
+        """)
+        self._collapse_btn.clicked.connect(self.toggle_collapsed)
+        header_row.addWidget(self._collapse_btn)
+
+        layout.addLayout(header_row)
+        layout.addSpacing(10)
+
+        # 2. "+ New Conversation" Button
+        self._new_chat_btn = QPushButton("＋  New Chat")
+        self._new_chat_btn.setToolTip("Start New Conversation (Ctrl+N)")
+        self._new_chat_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                color: {TEXT_PRIMARY};
+                text-align: center;
+                padding: 8px 12px;
+                border-radius: 8px;
+                font-size: 12.5px;
+                font-weight: 600;
+            }}
+            QPushButton:hover {{
+                background-color: rgba(0, 210, 238, 0.12);
+                border-color: rgba(0, 210, 238, 0.35);
+                color: #00D2EE;
             }}
         """)
-        s_lay = QHBoxLayout(status_frame)
-        s_lay.setContentsMargins(8, 4, 8, 4)
-        s_lay.setSpacing(6)
-        s_dot = QLabel("●")
-        s_dot.setStyleSheet(f"color: {SUCCESS}; font-size: 8pt;")
-        s_text = QLabel("SYSTEM READY")
-        s_text.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 8pt; font-weight: 600; letter-spacing: 1px;")
-        s_lay.addWidget(s_dot)
-        s_lay.addWidget(s_text)
-        s_lay.addStretch()
-        lay.addWidget(status_frame)
-        lay.addSpacing(12)
+        self._new_chat_btn.clicked.connect(self.new_conversation_requested.emit)
+        layout.addWidget(self._new_chat_btn)
+        layout.addSpacing(6)
 
-        # Navigation items
-        self._nav_buttons = {}
+        # 3. Navigation Buttons
+        self._btn_group = QButtonGroup(self)
+        self._btn_group.setExclusive(True)
+
         for page_id, label, icon in self.NAV_ITEMS:
-            btn = QPushButton(f"{icon}  {label}")
-            btn.setProperty("pageId", page_id)
+            btn = QPushButton(f"{icon}   {label}")
+            btn.setProperty("class", "navBtn")
             btn.setCheckable(True)
-            btn.setFixedHeight(36)
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
-            btn.clicked.connect(lambda _, pid=page_id: self.page_changed.emit(pid))
-            self._nav_buttons[page_id] = btn
-            lay.addWidget(btn)
+            btn.setToolTip(label)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.clicked.connect(lambda checked, pid=page_id: self._on_nav_clicked(pid))
 
-        lay.addStretch()
+            self._btn_group.addButton(btn)
+            self._buttons[page_id] = (btn, label, icon)
+            layout.addWidget(btn)
 
-        # Collapse/expand hint
-        hint = QLabel("Ctrl+B to collapse")
-        hint.setStyleSheet(f"color: {TEXT_DIM}; font-family: {FONT_MONO}; font-size: 9px;")
-        hint.setAlignment(Qt.AlignCenter)
-        lay.addWidget(hint)
+        layout.addStretch()
 
-        # Set first as default
-        self._nav_buttons["dashboard"].setChecked(True)
+        # 4. Status Indicator Badge (Bottom)
+        self._status_frame = QFrame()
+        self._status_frame.setStyleSheet("""
+            QFrame {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                padding: 6px 10px;
+            }
+        """)
+        status_layout = QHBoxLayout(self._status_frame)
+        status_layout.setContentsMargins(6, 4, 6, 4)
+        status_layout.setSpacing(8)
+
+        self._status_dot = QLabel("●")
+        self._status_dot.setStyleSheet(f"color: {SUCCESS}; font-size: 10px;")
+        status_layout.addWidget(self._status_dot)
+
+        self._status_text = QLabel("OMEN v1.0 · Ready")
+        self._status_text.setStyleSheet(f"color: {TEXT_DIM}; font-size: 11px;")
+        status_layout.addWidget(self._status_text)
+        status_layout.addStretch()
+
+        layout.addWidget(self._status_frame)
+
+        # Set default active
+        self.set_active_page("chat")
+
+    def toggle_collapsed(self):
+        self._is_collapsed = not self._is_collapsed
+        if self._is_collapsed:
+            self.setFixedWidth(64)
+            self._brand_title.hide()
+            self._status_frame.hide()
+            self._collapse_btn.setText("▶")
+            self._collapse_btn.setToolTip("Expand Sidebar")
+            self._new_chat_btn.setText("＋")
+            for page_id, (btn, label, icon) in self._buttons.items():
+                btn.setText(icon)
+        else:
+            self.setFixedWidth(220)
+            self._brand_title.show()
+            self._status_frame.show()
+            self._collapse_btn.setText("◀")
+            self._collapse_btn.setToolTip("Collapse Sidebar")
+            self._new_chat_btn.setText("＋  New Chat")
+            for page_id, (btn, label, icon) in self._buttons.items():
+                btn.setText(f"{icon}   {label}")
+        self.collapse_toggled.emit(self._is_collapsed)
+
+    def _on_nav_clicked(self, page_id: str):
+        self._active_page = page_id
+        self.page_changed.emit(page_id)
 
     def set_active_page(self, page_id: str):
-        for pid, btn in self._nav_buttons.items():
-            btn.setChecked(pid == page_id)
+        self._active_page = page_id
+        if page_id in self._buttons:
+            btn, _, _ = self._buttons[page_id]
+            btn.setChecked(True)
 
-
-class CollapsedSidebar(QWidget):
-    """Ultra-compact collapsed state — icons only."""
-
-    page_changed = Signal(str)
-    expand_requested = Signal()
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFixedWidth(56)
-        self.setStyleSheet(f"""
-            QWidget {{ background: {BACKGROUND_DARK}; border-right: 1px solid {BORDER}; }}
-            QPushButton {{ background: transparent; color: {TEXT_SECONDARY};
-                border-radius: 8px; font-size: 16px; padding: 12px 0; border: none; }}
-            QPushButton:hover {{ background: {BACKGROUND_MEDIUM}; color: {TEXT_PRIMARY}; }}
-            QPushButton:checked {{ background: {PRIMARY_DIM}; color: {PRIMARY}; }}
-        """)
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(4, 12, 4, 12)
-        lay.setSpacing(4)
-
-        # Orb only
-        orb = QLabel("◉")
-        orb.setFont(QFont(FONT_FAMILY, 24, QFont.Weight.Bold))
-        orb.setStyleSheet(f"color: {PRIMARY};")
-        orb.setAlignment(Qt.AlignCenter)
-        lay.addWidget(orb)
-        lay.addSpacing(8)
-
-        for page_id, label, icon in Sidebar.NAV_ITEMS:
-            btn = QPushButton(icon)
-            btn.setProperty("pageId", page_id)
-            btn.setCheckable(True)
-            btn.setFixedSize(40, 40)
-            btn.setCursor(QCursor(Qt.PointingHandCursor))
-            btn.setToolTip(label)
-            btn.clicked.connect(lambda _, pid=page_id: self.page_changed.emit(pid))
-            lay.addWidget(btn, alignment=Qt.AlignHCenter)
-
-        lay.addStretch()
-
-        # Expand button
-        expand = QPushButton("⌘")
-        expand.setFixedSize(40, 40)
-        expand.setToolTip("Expand sidebar (Ctrl+B)")
-        expand.clicked.connect(self.expand_requested.emit)
-        lay.addWidget(expand, alignment=Qt.AlignHCenter)
+    def set_status(self, text: str, state: str = "ready"):
+        color = SUCCESS if state == "ready" else (WARNING if state == "busy" else ERROR)
+        self._status_dot.setStyleSheet(f"color: {color}; font-size: 10px;")
+        self._status_text.setText(text)
+        self._orb_icon.set_state("idle" if state == "ready" else ("thinking" if state == "busy" else "error"))
