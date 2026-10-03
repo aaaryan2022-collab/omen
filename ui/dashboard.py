@@ -1,5 +1,7 @@
+# ============================================
 """
-Holographic Command Deck & Telemetry Dashboard for OMEN.
+OMEN Dashboard — premium Command Deck.
+Restrained dark background, steel blue accent, minimal telemetry.
 """
 
 from datetime import datetime
@@ -13,11 +15,14 @@ from app.hardware import get_hardware_profile
 from core.agent import Agent
 from core.events import EventType, get_event_bus
 from ui.orb import CommandCore
-from ui.styles.palette import PRIMARY, SECONDARY, SUCCESS, WARNING, TEXT_PRIMARY, TEXT_SECONDARY, BACKGROUND_CARD
+from ui.styles.palette import (
+    PRIMARY, SUCCESS, ERROR, TEXT_PRIMARY, TEXT_SECONDARY, BACKGROUND_DARK,
+    BACKGROUND_CARD, BORDER, BORDER_ACTIVE, TEXT_DIM, BOX_SHADOW
+)
 
 
 class DashboardView(QWidget):
-    """Futuristic Command Deck with live telemetry and voice controls."""
+    """Premium Command Deck — clean telemetry, holographic core, quick actions."""
 
     voice_requested = Signal()
     continuous_voice_requested = Signal()
@@ -34,52 +39,53 @@ class DashboardView(QWidget):
 
     def _build_ui(self):
         self.setObjectName("dashboardView")
+        self.setStyleSheet(f"background: {BACKGROUND_DARK};")
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(36, 24, 36, 24)
+        layout.setContentsMargins(32, 24, 32, 20)
         layout.setSpacing(18)
 
-        # 1. Header Bar with Brand & Live Clock
+        # 1. Header Bar
         header = QHBoxLayout()
         brand_box = QVBoxLayout()
         brand_label = QLabel("◉ OMEN COMMAND DECK")
         brand_label.setObjectName("hudBrand")
-        brand_label.setFont(QFont("Segoe UI", 20, QFont.Weight.Bold))
-        brand_label.setStyleSheet(f"""
-            color: {PRIMARY};
-            letter-spacing: 3px;
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00F0FF, stop:1 #A355FF);
-        """)
+        brand_label.setFont(QFont("Inter, Segoe UI", 20, QFont.Weight.Bold))
+        brand_label.setStyleSheet(f"color: {PRIMARY}; letter-spacing: 2px;")
         brand_box.addWidget(brand_label)
 
-        subtitle = QLabel("LOCAL AUTONOMOUS INTELLIGENCE & HARDWARE MATRIX")
+        subtitle = QLabel("LOCAL AUTONOMOUS INTELLIGENCE")
         subtitle.setObjectName("hudSubtitle")
+        subtitle.setStyleSheet(f"color: {TEXT_DIM}; font-size: 8.5pt; letter-spacing: 1.5px;")
         brand_box.addWidget(subtitle)
         header.addLayout(brand_box)
         header.addStretch()
 
+        # Clock
         clock_box = QVBoxLayout()
         self._time_label = QLabel()
         self._time_label.setObjectName("hudTime")
+        self._time_label.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20pt; font-family: Consolas; font-weight: bold;")
         self._date_label = QLabel()
         self._date_label.setObjectName("hudDate")
+        self._date_label.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 9pt;")
         clock_box.addWidget(self._time_label, alignment=Qt.AlignmentFlag.AlignRight)
         clock_box.addWidget(self._date_label, alignment=Qt.AlignmentFlag.AlignRight)
         header.addLayout(clock_box)
         layout.addLayout(header)
 
-        # 2. Live Telemetry HUD Bar (4 Cards: CPU, RAM, DISK, BATTERY/GPU)
-        telemetry_grid = QHBoxLayout()
-        telemetry_grid.setSpacing(14)
+        # 2. Live Telemetry HUD Bar — 4 compact cards
+        telemetry_grid = QGridLayout()
+        telemetry_grid.setSpacing(12)
 
         self._card_cpu = self._create_telemetry_card("CPU LOAD", "-- %", "Multicore Active")
         self._card_ram = self._create_telemetry_card("SYSTEM MEMORY", "-- GB", "Host RAM Usage")
         self._card_disk = self._create_telemetry_card("LOCAL STORAGE", "-- GB", "Primary Drive Free")
         self._card_gpu = self._create_telemetry_card("GPU ENGINE", "ONLINE", "RTX Acceleration")
 
-        telemetry_grid.addWidget(self._card_cpu["frame"])
-        telemetry_grid.addWidget(self._card_ram["frame"])
-        telemetry_grid.addWidget(self._card_disk["frame"])
-        telemetry_grid.addWidget(self._card_gpu["frame"])
+        telemetry_grid.addWidget(self._card_cpu["frame"], 0, 0)
+        telemetry_grid.addWidget(self._card_ram["frame"], 0, 1)
+        telemetry_grid.addWidget(self._card_disk["frame"], 0, 2)
+        telemetry_grid.addWidget(self._card_gpu["frame"], 0, 3)
         layout.addLayout(telemetry_grid)
 
         # 3. Center Holographic Core Section
@@ -94,40 +100,85 @@ class DashboardView(QWidget):
 
         self._status_label = QLabel("SYSTEM IDLE · AWAITING VOICE INPUT")
         self._status_label.setObjectName("hudStatus")
-        self._status_label.setStyleSheet("color: #00F0FF; font-family: Consolas; font-weight: bold; letter-spacing: 2px;")
+        self._status_label.setStyleSheet(f"color: {PRIMARY}; font-family: Consolas; font-weight: bold; letter-spacing: 2px;")
         core_box.addWidget(self._status_label, alignment=Qt.AlignmentFlag.AlignHCenter)
         layout.addLayout(core_box)
         layout.addStretch(1)
 
         # 4. Quick Action Command Deck
         actions_frame = QFrame()
-        actions_frame.setStyleSheet("""
-            QFrame {
-                background-color: rgba(18, 26, 43, 0.65);
-                border: 1px solid #1E2C48;
+        actions_frame.setStyleSheet(f"""
+            QFrame {{
+                background-color: {BACKGROUND_CARD};
+                border: 1px solid {BORDER};
                 border-radius: 14px;
-                padding: 10px 16px;
-            }
+                padding: 14px 18px;
+            }}
         """)
         actions_layout = QHBoxLayout(actions_frame)
         actions_layout.setSpacing(12)
 
-        btn_convo = QPushButton("🎙 2-WAY VOICE CONVO")
+        btn_convo = QPushButton("🎙 VOICE CONVO")
         btn_convo.setObjectName("primaryBtn")
-        btn_convo.setToolTip("Start continuous conversational voice loop (human-to-human flow)")
+        btn_convo.setToolTip("Start continuous conversational voice loop")
         btn_convo.clicked.connect(self.continuous_voice_requested.emit)
+        btn_convo.setStyleSheet(f"""
+            QPushButton {{
+                background: {PRIMARY_DIM};
+                color: {PRIMARY};
+                border: 1px solid {PRIMARY};
+                border-radius: 10px;
+                padding: 8px 16px;
+                font-weight: 600;
+                font-size: 11pt;
+            }}
+            QPushButton:hover {{ background: rgba(59,130,246,0.18); }}
+        """)
         actions_layout.addWidget(btn_convo)
 
         btn_vision = QPushButton("👁 SCREEN SCAN")
         btn_vision.clicked.connect(self.vision_requested.emit)
+        btn_vision.setStyleSheet(f"""
+            QPushButton {{
+                background: {BACKGROUND_DARK};
+                color: {TEXT_PRIMARY};
+                border: 1px solid {BORDER};
+                border-radius: 10px;
+                padding: 8px 16px;
+                font-size: 11pt;
+            }}
+            QPushButton:hover {{ border-color: {PRIMARY}; }}
+        """)
         actions_layout.addWidget(btn_vision)
 
         btn_brief = QPushButton("🌅 DAILY BRIEFING")
         btn_brief.clicked.connect(self.briefing_requested.emit)
+        btn_brief.setStyleSheet(f"""
+            QPushButton {{
+                background: {BACKGROUND_DARK};
+                color: {TEXT_PRIMARY};
+                border: 1px solid {BORDER};
+                border-radius: 10px;
+                padding: 8px 16px;
+                font-size: 11pt;
+            }}
+            QPushButton:hover {{ border-color: {PRIMARY}; }}
+        """)
         actions_layout.addWidget(btn_brief)
 
         btn_chat = QPushButton("💬 CHAT MATRIX")
         btn_chat.clicked.connect(self.chat_requested.emit)
+        btn_chat.setStyleSheet(f"""
+            QPushButton {{
+                background: {BACKGROUND_DARK};
+                color: {TEXT_PRIMARY};
+                border: 1px solid {BORDER};
+                border-radius: 10px;
+                padding: 8px 16px;
+                font-size: 11pt;
+            }}
+            QPushButton:hover {{ border-color: {PRIMARY}; }}
+        """)
         actions_layout.addWidget(btn_chat)
 
         layout.addWidget(actions_frame)
@@ -146,31 +197,32 @@ class DashboardView(QWidget):
     def _create_telemetry_card(self, title: str, val: str, sub: str) -> dict:
         frame = QFrame()
         frame.setObjectName("hudCard")
-        frame.setStyleSheet("""
-            QFrame#hudCard {
-                background-color: rgba(18, 26, 43, 0.85);
-                border: 1px solid #1E2C48;
+        frame.setStyleSheet(f"""
+            QFrame#hudCard {{
+                background-color: {BACKGROUND_CARD};
+                border: 1px solid {BORDER};
                 border-radius: 10px;
-                padding: 10px 14px;
-            }
-            QFrame#hudCard:hover {
-                border: 1px solid #00F0FF;
-            }
+                padding: 12px 14px;
+            }}
+            QFrame#hudCard:hover {{
+                border-color: {PRIMARY};
+            }}
         """)
         v_layout = QVBoxLayout(frame)
         v_layout.setContentsMargins(4, 4, 4, 4)
         v_layout.setSpacing(2)
 
         lbl_title = QLabel(title)
-        lbl_title.setStyleSheet("color: #64748B; font-size: 8pt; font-weight: bold; letter-spacing: 1.5px; font-family: Consolas;")
+        lbl_title.setStyleSheet(f"color: {TEXT_DIM}; font-size: 8pt; font-weight: bold; letter-spacing: 1.5px; font-family: Consolas;")
         v_layout.addWidget(lbl_title)
 
         lbl_val = QLabel(val)
-        lbl_val.setStyleSheet("color: #00F0FF; font-size: 14pt; font-weight: bold; font-family: Consolas;")
+        lbl_val.setObjectName("hudVal")
+        lbl_val.setStyleSheet(f"color: {PRIMARY}; font-size: 14pt; font-weight: bold; font-family: Consolas;")
         v_layout.addWidget(lbl_val)
 
         lbl_sub = QLabel(sub)
-        lbl_sub.setStyleSheet("color: #94A3B8; font-size: 8pt;")
+        lbl_sub.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 8pt;")
         v_layout.addWidget(lbl_sub)
 
         return {"frame": frame, "val": lbl_val, "sub": lbl_sub}
