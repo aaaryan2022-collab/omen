@@ -1,4 +1,10 @@
 # ============================================
+from memory.fact_memory import FactMemory
+from security.permissions_v5 import SCOPES, PermissionManager
+from automation.routines import RoutineStore
+from history.action_log import ActionLog
+from voice.wakeword import WakeWord
+from app.agent_orch import AgentOrch
 """
 Main Application Window for OMEN — Premium Desktop AI Assistant.
 Aesthetic inspired by Linear, Raycast, and Arc.
