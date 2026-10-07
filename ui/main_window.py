@@ -217,6 +217,7 @@ class MainWindow(QMainWindow):
         # 1. Left Sidebar
         self._sidebar = Sidebar(self)
         self._central_layout.addWidget(self._sidebar)
+        # UPGRADE-v2: expanded nav — Home/Chat/Agents/Tasks/Memory/Projects/Browser/Screen/Code/Automation/Activity/Models/Plugins/Settings
 
         # 2. Main Container
         content_container = QWidget()
@@ -284,6 +285,8 @@ class MainWindow(QMainWindow):
 
         # System Status
         self._top_status = QLabel("● ONLINE")
+        self._model_display = QLabel("Model: ollama/llama3")
+        self._agent_display = QLabel("Agent: ChatAgent")
         self._top_status.setStyleSheet(f"color: {SUCCESS}; font-size: 10px; font-weight: bold;")
         tb_layout.addWidget(self._top_status)
 
