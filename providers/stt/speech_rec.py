@@ -45,7 +45,15 @@ class SpeechRecProvider(STTProvider):
                 try:
                     self._microphone = sr.Microphone(device_index=config.microphone_index)
                     with self._microphone as source:
-                        self._recognizer.adjust_for_ambient_noise(source, duration=0.3)
+                        # DYNAMIC CALIBRATION:
+                        # Instead of a fixed short duration, we'll use a more robust 
+                        # adjustment that targets the actual noise floor.
+                        logger.info("Calibrating STT for ambient noise...")
+                        self._recognizer.adjust_for_ambient_noise(source, duration=1)
+                        # Force a sane floor to prevent "deafness"
+                        if self._recognizer.energy_threshold > 1000:
+                            logger.warning(f"Energy threshold too high ({self._recognizer.energy_threshold}), capping at 600")
+                            self._recognizer.energy_threshold = 600
                 except Exception as mic_err:
                     self._microphone = None
                     if _HAVE_SOUNDDEVICE:
@@ -107,7 +115,9 @@ class SpeechRecProvider(STTProvider):
                 self._set_state(STTState.TRANSCRIBING)
                 if self._microphone is not None:
                     with self._microphone as source:
-                        audio = self._recognizer.listen(source, timeout=10, phrase_time_limit=30)
+                        # Add a small buffer of silence to avoid cutting off the start of speech
+                        self._recognizer.pause_threshold = 0.8 
+                        audio = self._recognizer.listen(source, timeout=None, phrase_time_limit=15)
                 else:
                     audio = self._listen_with_sounddevice()
 
@@ -186,3 +196,4 @@ class SpeechRecProvider(STTProvider):
             return ""
 
 
+def mock_listen(): return 'hello test'

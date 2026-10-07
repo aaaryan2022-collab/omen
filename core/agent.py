@@ -126,6 +126,11 @@ class Agent:
                 response_text = "\n".join(summaries) or "The request completed, but produced no summary."
             response_text = response_text or "Done."
 
+            # --- NEW: Voice Output ---
+            if self.tts and self.tts.is_available:
+                self.tts.speak(response_text)
+            # -------------------------
+
             self._set_state(AgentState.COMPLETED)
 
             return {

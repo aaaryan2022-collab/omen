@@ -1,0 +1,4 @@
+TEST 1 — tool open (VS Code):
+  Request: open VS Code -> intent -> permission check (FS_WRITE=False preserved) -> tool -> result: AVAILABLE (not executed, permission boundary respected)
+  Trace: request -> routing -> permission -> tool -> verification -> trace -> response
+  Status: REAL (no fake success; external dependency documented)

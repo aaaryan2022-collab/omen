@@ -1,0 +1,5 @@
+JARVIS: 134ertel/JARVIS.git (cloned depth=1)
+Alice: pmbstyle/Alice.git (cloned depth=1)
+Marven: ahomsi0/Marven (source from practice_models/ or clone pending)
+OpenGuider: mo-tunn/OpenGuider (source from practice_models/)
+OpenJarvis: open-jarvis/OpenJarvis (source jarvis_ref/)

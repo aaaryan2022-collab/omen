@@ -1,7 +1,7 @@
 """Vision / screen analysis layer — screenshot, OCR, perception."""
 from typing import Optional, Dict, Any, List
 import json
-from mss import mss
+from mss import MSS
 from PIL import Image
 from app.logging_config import logger
 
@@ -10,7 +10,7 @@ class VisionModule:
     """Screen capture + basic text extraction (PIL + optional OCR fallback)."""
 
     def __init__(self):
-        self._sct = mss()
+        self._sct = MSS()
         self.modes = {
             "screenshot":"on_demand",
             "region":"on_region",

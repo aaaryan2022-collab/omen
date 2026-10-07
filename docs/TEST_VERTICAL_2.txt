@@ -1,0 +1,4 @@
+TEST 2 — screen + vision:
+  Permission asked (real) -> screenshot attempt -> vision model -> analysis -> response
+  If mss/pyautogui unavailable: "Screen capture: Unavailable (dependency)" — never faked
+  Trace: request -> permission -> screenshot -> vision -> analysis -> response -> trace

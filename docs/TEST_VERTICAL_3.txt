@@ -1,0 +1,3 @@
+TEST 3 — inspect/fix/test:
+  Agent: CodeAgent -> repository index (real files in E:\OMEN) -> planning -> permission -> file read/modify -> terminal -> tests -> failure analysis if needed -> repair -> diff -> trace
+  Status: PARTIAL — code agent interface real; full automated repair requires tool execution permissions (preserved conservative)

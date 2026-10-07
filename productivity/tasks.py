@@ -98,7 +98,12 @@ def parse_natural_date(text: str) -> Optional[datetime]:
         "%B %d at %I %p", "%b %d at %I %p", "%B %d %I:%M %p", "%b %d %I:%M %p"
     ):
         try:
-            return datetime.strptime(text.strip(), fmt)
+            dt = datetime.strptime(text.strip(), fmt)
+            # Fix DeprecationWarning: If year is not provided in format, strptime defaults to 1900.
+            # Update to current year to avoid ambiguity and potential Python 3.15 failures.
+            if dt.year == 1900:
+                dt = dt.replace(year=now.year)
+            return dt
         except ValueError:
             continue
 
@@ -171,5 +176,3 @@ def get_task_manager() -> TaskManager:
     if _task_manager_instance is None:
         _task_manager_instance = TaskManager()
     return _task_manager_instance
-
-
