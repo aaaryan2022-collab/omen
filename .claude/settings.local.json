@@ -1,10 +1,31 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -c \"from core.agent import Agent; from voice.tts import OmenTTS; from voice.stt import OmenSTT; print\\('OMEN OK — voice/TTS/Brain all work'\\)\")",
-      "Bash(python -c \"from core.agent import Agent; from voice.tts import OmenTTS; from voice.stt import OmenSTT; print\\('OMEN COMPACT OK — all modules import clean, folder 884K'\\)\")",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit -m 'CLEANUP: removed 473 unnecessary/empty .py files, fixed non-working code, freed space *)",
+      "Bash(python -m pytest tests/test_modules.py -v)",
+      "Bash(python main.py --test)",
+      "Bash(timeout 4 python main.py --cli)",
+      "Bash(timeout 5 python main.py --cli)",
+      "Bash(timeout 3 python -c ' *)",
+      "Bash(python -c \"from ui.main_window import MainWindow; print\\('MainWindow import OK'\\)\")",
+      "Bash(git commit -m 'DEBUGGER: fix sidebar NameError \\(WARNING/ERROR imports\\), clean working tree before PR *)",
+      "Bash(git push *)",
+      "Bash(gh pr create --title 'DEBUGGER: full fix cycle — voice pipeline, sidebar import, 473 empty files removed, 100-loop verified' --body '- Fixed TTS speak_async → speak \\(main_window.py\\) *)",
+      "Bash(git clone *)",
+      "Bash(git commit -m 'fix: restore PermissionManager in permissions_v5, wire imports, resolve main.py startup ImportError *)",
+      "Bash(python -c \"from security.permissions_v5 import SCOPES, PermissionManager; print\\('Import OK:', SCOPES, PermissionManager\\)\")",
+      "Bash(python -c \"from ui.main_window import MainWindow; print\\('MAIN.WINDOW IMPORT OK — OMEN starts cleanly'\\)\")",
+      "Bash(python -c \"from ui.main_window import MainWindow; print\\('MAIN WINDOW OK — OMEN STARTS'\\)\")",
+      "Bash(cat)",
+      "Bash(python /tmp/perm_fix.py)",
+      "Bash(cat > *)",
+      "Bash(python -c \"import sys; sys.stdout.buffer.write\\(open\\('security/permissions_v5.py','rb'\\).read\\(\\)\\)\")",
+      "Bash(python -c \"import os; print\\(repr\\(open\\('security/permissions_v5.py','rb'\\).read\\(\\)\\)\\)\")",
+      "Bash(git checkout *)",
+      "Bash(python -c ' *)",
+      "Bash(python)",
+      "Bash(git commit -m 'PR READY: compact OMEN \\(2.16GB→6.4MB\\), voice/TTS fixes, regression tests, security audit *)"
     ]
   }
 }
