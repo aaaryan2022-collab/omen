@@ -16,7 +16,9 @@ from app.config import config
 from app.logging_config import logger
 from productivity.notifications import NotificationService
 from voice.tts import OmenTTS
-from core.events import EventBus, EventType
+from core.agent_framework import AGENT_REGISTRY, AgentInterface, AgentResult
+from core.model_registry import _router
+from core.computer_use_loop import ComputerUseLoop
 from scheduler.jobs import OmenJobs
 from scheduler.scheduler import get_scheduler
 
@@ -77,7 +79,18 @@ class Agent:
         self._set_state(AgentState.THINKING)
 
         try:
-            # Step 1: LLM processes query and may request tool calls
+            # Route to specialized agent per prompt spec
+        specialist = None
+        if "code" in user_query.lower() or "fix" in user_query.lower():
+            specialist = AGENT_REGISTRY.get("code")
+        elif "screen" in user_query.lower() or "look" in user_query.lower():
+            specialist = AGENT_REGISTRY.get("vision")
+        elif "browse" in user_query.lower() or "search web" in user_query.lower():
+            specialist = AGENT_REGISTRY.get("browser")
+        elif "research" in user_query.lower():
+            specialist = AGENT_REGISTRY.get("research")
+        if specialist:
+            return specialist.process(user_query, conversation_history)
             memory_context = self.memory.recall_context(user_query)
             system_prompt = (
                 "You are OMEN, a local-first Windows assistant. Respond concisely and accurately. "
