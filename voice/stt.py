@@ -27,7 +27,7 @@ class OmenSTT:
         if config.mock_mode:
             logger.info("STT: Mock mode active")
         else:
-            self._provider = SpeechRecProvider()
+            self._provider = SpeechRecProvider.get_instance()
             if not self._provider.is_available:
                 logger.warning("SpeechRecognition not available — voice mode disabled")
 
@@ -69,7 +69,12 @@ class OmenSTT:
             logger.warning("Cannot listen: microphone provider unavailable")
             return None
         try:
+            if hasattr(self._provider, "listen_once"):
+                res = self._provider.listen_once()
+                return res.text if res and res.text.strip() else None
             self._provider.start_listening()
+            import time
+            time.sleep(3.0)
             result = self._provider.stop_listening()
             return result.text if result and result.text.strip() else None
         except Exception as exc:

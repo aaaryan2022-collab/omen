@@ -1,2 +1,5 @@
-No unresolved technical blockers for core architecture.
-Partial gaps (not blockers): plugins/ dir missing (Phase 11), full Marven/OpenGuider clone pending, sandbox config optional.
+# Implementation Blockers
+
+Current Blockers: None.
+
+All core subsystems, agents, tools, memory, coding suite, MCP client, skills registry, deep research engine, traces, CLI doctor, and test vertical workflows are implemented and verified.

@@ -1,22 +1,7 @@
 # ============================================
-from memory.fact_memory import FactMemory
-from security.permissions_v5 import SCOPES, PermissionManager
-from automation.routines import RoutineStore
-from history.action_log import ActionLog
-from voice.wakeword import WakeWord
-from app.agent_orch import AgentOrch
 """
-Main Application Window for OMEN — Premium Desktop AI Assistant.
-Aesthetic inspired by Linear, Raycast, and Arc.
-Dark-first interface, translucent glass panels, subtle electric cyan accents.
-Features:
-- Collapsible Sidebar with New Chat, Tasks, Calendar, Notes, Files, System, Settings
-- Hero Assistant View with dynamic greeting, 6 quick actions, and conversation stream
-- Raycast Command Palette (Ctrl + Space)
-- Floating Desktop Mini Widget (Ctrl + M)
-- Dedicated Voice Dialogue Mode with live visualization
-- Toast Notification Feedback
-- Multi-threaded Agent Execution
+Main Application Window for OMEN — Minimal, Beautiful, Focused.
+Aesthetic: Linear / Arc / Raycast — Deep dark, subtle cyan, generous whitespace.
 """
 
 import sys
@@ -37,6 +22,14 @@ from ui.views.notes_view import NotesView
 from ui.views.files_view import FilesView
 from ui.views.system_view import SystemView
 from ui.views.settings_view import SettingsView
+from ui.views.home_view import HomeView
+from ui.views.coding_view import CodingView
+from ui.views.research_view import ResearchView
+from ui.views.vision_view import VisionView
+from ui.views.skills_mcp_view import SkillsMcpView
+from ui.views.activity_view import ActivityView
+from ui.views.agent_center_view import AgentCenterView
+from ui.views.command_center_view import CommandCenterView
 from ui.command_palette import CommandPalette
 from ui.mini_widget import MiniWidget
 from ui.voice_overlay import VoiceOverlay
@@ -52,7 +45,7 @@ from ui.styles.palette import (
 
 
 class HoloBackground(QWidget):
-    """Subtle deep dark background — minimal depth gradient, no distracting noise."""
+    """Clean deep dark background — single radial gradient, zero noise."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -64,27 +57,23 @@ class HoloBackground(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         w, h = self.width(), self.height()
 
-        # Deep warm dark gradient
-        bg_grad = QRadialGradient(w / 2.0, h / 2.0, max(w, h) * 0.75)
-        bg_grad.setColorAt(0.0, QColor("#0C0C10"))
-        bg_grad.setColorAt(0.65, QColor("#09090C"))
+        bg_grad = QRadialGradient(w / 2.0, h / 2.0, max(w, h) * 0.7)
+        bg_grad.setColorAt(0.0, QColor("#0B0B0F"))
+        bg_grad.setColorAt(0.5, QColor("#09090C"))
         bg_grad.setColorAt(1.0, QColor("#060608"))
         painter.fillRect(self.rect(), QBrush(bg_grad))
 
-        # Very subtle ambient cyan glow at top center
-        ambient = QRadialGradient(w / 2.0, 0, w * 0.45)
-        ambient.setColorAt(0.0, QColor(0, 210, 238, 12))
-        ambient.setColorAt(0.6, QColor(0, 210, 238, 3))
+        # Single subtle ambient glow
+        ambient = QRadialGradient(w / 2.0, 0, w * 0.5)
+        ambient.setColorAt(0.0, QColor(0, 210, 238, 8))
         ambient.setColorAt(1.0, QColor(0, 0, 0, 0))
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QBrush(ambient))
-        painter.drawEllipse(QRectF(w * 0.1, -h * 0.2, w * 0.8, h * 0.6))
-
+        painter.drawEllipse(QRectF(w * 0.15, -h * 0.15, w * 0.7, h * 0.45))
         painter.end()
 
 
 class VoiceWorker(QThread):
-    """Capture microphone utterance off the main GUI thread."""
     transcript = Signal(str)
     unavailable = Signal(str)
 
@@ -109,7 +98,6 @@ class VoiceWorker(QThread):
 
 
 class VoiceMeter(QThread):
-    """Microphone audio energy meter."""
     level = Signal(float)
 
     def run(self):
@@ -127,11 +115,7 @@ class VoiceMeter(QThread):
                     self.level.emit(0.0)
 
             with sd.RawInputStream(
-                samplerate=16000,
-                blocksize=512,
-                channels=1,
-                dtype="int16",
-                callback=on_audio,
+                samplerate=16000, blocksize=512, channels=1, dtype="int16", callback=on_audio,
             ):
                 while not self.isInterruptionRequested():
                     self.msleep(35)
@@ -144,7 +128,6 @@ class VoiceMeter(QThread):
 
 
 class AgentWorker(QThread):
-    """Execute autonomous agent request off the main GUI thread."""
     completed = Signal(object)
     failed = Signal(str)
 
@@ -161,22 +144,21 @@ class AgentWorker(QThread):
 
 
 class MainWindow(QMainWindow):
-    """Primary OMEN Desktop Application Window."""
+    """Primary OMEN Desktop Application Window — Minimal & Focused."""
 
     def __init__(self, agent: Agent, parent=None):
         super().__init__(parent)
         self._agent = agent
         self._continuous_voice_active = False
-
         self._setup_window()
         self._build_ui()
         self._setup_subcomponents()
         self._connect_signals()
 
     def _setup_window(self):
-        self.setWindowTitle("OMEN — Personal AI Assistant")
-        self.setMinimumSize(1100, 680)
-        self.resize(1340, 840)
+        self.setWindowTitle("OMEN")
+        self.setMinimumSize(1000, 640)
+        self.resize(1280, 800)
         self.setObjectName("mainWindow")
 
         central = QWidget()
@@ -186,75 +168,71 @@ class MainWindow(QMainWindow):
         self._central_layout.setContentsMargins(0, 0, 0, 0)
         self._central_layout.setSpacing(0)
 
-        # Ambient layered background
+        # Background
         self._holo_bg = HoloBackground(central)
         self._holo_bg.setGeometry(central.rect())
         self._holo_bg.lower()
 
-        # Status Bar
+        # Status Bar — minimal
         self.statusBar().setStyleSheet(f"""
             QStatusBar {{
-                background-color: {BACKGROUND_DARK};
+                background-color: transparent;
                 color: {TEXT_DIM};
-                border-top: 1px solid rgba(255, 255, 255, 0.05);
+                border: none;
                 font-size: 11px;
+                padding: 0 16px;
             }}
         """)
-        self.statusBar().showMessage("OMEN Ready · Press Ctrl+Space for Command Palette")
+        self.statusBar().showMessage("Ready  •  Ctrl+K for Command Palette")
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        try:
-            central = self.centralWidget()
-            if central and hasattr(self, '_holo_bg'):
-                self._holo_bg.setGeometry(central.rect())
-            if hasattr(self, '_voice_overlay') and self._voice_overlay.isVisible():
-                self._voice_overlay.setGeometry(central.rect())
-        except Exception:
-            pass
+        central = self.centralWidget()
+        if central and hasattr(self, '_holo_bg'):
+            self._holo_bg.setGeometry(central.rect())
+        if hasattr(self, '_voice_overlay') and self._voice_overlay.isVisible():
+            self._voice_overlay.setGeometry(central.rect())
 
     def _build_ui(self):
-        # 1. Left Sidebar
+        # 1. Sidebar — Clean & Minimal
         self._sidebar = Sidebar(self)
         self._central_layout.addWidget(self._sidebar)
-        # UPGRADE-v2: expanded nav — Home/Chat/Agents/Tasks/Memory/Projects/Browser/Screen/Code/Automation/Activity/Models/Plugins/Settings
 
-        # 2. Main Container
+        # 2. Main Content Area
         content_container = QWidget()
         content_layout = QVBoxLayout(content_container)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
 
-        # Top Bar
+        # Top Bar — Search + Essentials only
         topbar = QFrame()
         topbar.setObjectName("topbar")
         topbar.setStyleSheet(f"""
             QFrame#topbar {{
-                background-color: {BACKGROUND_DARK};
-                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-                padding: 6px 20px;
+                background-color: rgba(9, 9, 12, 0.85);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.04);
             }}
         """)
         tb_layout = QHBoxLayout(topbar)
-        tb_layout.setContentsMargins(16, 6, 16, 6)
+        tb_layout.setContentsMargins(16, 8, 16, 8)
         tb_layout.setSpacing(12)
 
-        # Mini Command Palette Trigger
-        self._palette_trigger_btn = QPushButton("🔍  Type a command or ask OMEN...   Ctrl+Space")
-        self._palette_trigger_btn.setFixedWidth(360)
+        # Search Trigger (Ctrl+K)
+        self._palette_trigger_btn = QPushButton("🔍  Search…   Ctrl+K")
+        self._palette_trigger_btn.setFixedWidth(320)
         self._palette_trigger_btn.setStyleSheet("""
             QPushButton {
-                background: rgba(255, 255, 255, 0.04);
-                border: 1px solid rgba(255, 255, 255, 0.07);
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
                 border-radius: 8px;
                 color: #71717A;
                 text-align: left;
                 padding: 6px 14px;
-                font-size: 11.5px;
+                font-size: 12px;
             }
             QPushButton:hover {
-                background: rgba(255, 255, 255, 0.07);
-                border-color: rgba(0, 210, 238, 0.3);
+                background: rgba(255, 255, 255, 0.06);
+                border-color: rgba(0, 210, 238, 0.25);
                 color: #EDEDEF;
             }
         """)
@@ -263,56 +241,69 @@ class MainWindow(QMainWindow):
 
         tb_layout.addStretch()
 
-        # Mini Widget Button
-        mini_btn = QPushButton("◱ Mini Mode")
-        mini_btn.setToolTip("Switch to compact floating desktop widget (Ctrl+M)")
-        mini_btn.setStyleSheet("""
+        # Model indicator (clickable -> settings)
+        self._model_btn = QPushButton("🤖  Local Model")
+        self._model_btn.setStyleSheet("""
             QPushButton {
-                background: transparent;
-                border: 1px solid rgba(255, 255, 255, 0.08);
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
                 border-radius: 6px;
                 color: #A1A1AA;
-                padding: 5px 12px;
-                font-size: 11.5px;
+                padding: 4px 10px;
+                font-size: 11px;
             }
             QPushButton:hover {
                 background: rgba(255, 255, 255, 0.06);
+                color: white;
+            }
+        """)
+        self._model_btn.clicked.connect(lambda: self._switch_page("settings"))
+        tb_layout.addWidget(self._model_btn)
+
+        # Mini Mode
+        mini_btn = QPushButton("◱")
+        mini_btn.setToolTip("Mini Mode (Ctrl+M)")
+        mini_btn.setFixedSize(32, 32)
+        mini_btn.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                border: 1px solid rgba(255, 255, 255, 0.06);
+                border-radius: 6px;
+                color: #A1A1AA;
+                font-size: 13px;
+            }
+            QPushButton:hover {
+                background: rgba(255, 255, 255, 0.05);
                 color: #F4F4F6;
             }
         """)
         mini_btn.clicked.connect(self._toggle_mini_mode)
         tb_layout.addWidget(mini_btn)
 
-        # System Status
-        self._top_status = QLabel("● ONLINE")
-        self._model_display = QLabel("Model: ollama/llama3")
-        self._agent_display = QLabel("Agent: ChatAgent")
-        self._top_status.setStyleSheet(f"color: {SUCCESS}; font-size: 10px; font-weight: bold;")
-        tb_layout.addWidget(self._top_status)
-
         content_layout.addWidget(topbar)
 
-        # Emergency Stop Banner
-        self._emergency_banner = QLabel("🛑 EMERGENCY STOP ACTIVE — Tool execution halted. Press Esc to reset.")
+        # Emergency Banner
+        self._emergency_banner = QLabel("🛑 EMERGENCY STOP ACTIVE — Press Esc to reset")
         self._emergency_banner.setHidden(True)
         self._emergency_banner.setStyleSheet("""
             QLabel {
-                background-color: rgba(239, 68, 68, 0.90);
+                background-color: rgba(239, 68, 68, 0.9);
                 color: white;
-                font-weight: bold;
-                font-size: 11pt;
-                padding: 8px;
+                font-weight: 600;
+                font-size: 12px;
+                padding: 10px;
                 text-align: center;
             }
         """)
         content_layout.addWidget(self._emergency_banner)
 
-        # Stack of Views
+        # View Stack
         self._stack = QStackedWidget()
         content_layout.addWidget(self._stack, stretch=1)
         self._central_layout.addWidget(content_container, stretch=1)
 
-        # Initialize All Views
+        # Initialize Views — Complete 15 Modular View Suite
+        self._home_view = HomeView()
         self._assistant_view = AssistantView(self._agent)
         self._tasks_view = TasksView(self._agent)
         self._calendar_view = CalendarView()
@@ -320,33 +311,48 @@ class MainWindow(QMainWindow):
         self._files_view = FilesView()
         self._system_view = SystemView()
         self._settings_view = SettingsView()
+        self._coding_view = CodingView()
+        self._research_view = ResearchView()
+        self._vision_view = VisionView()
+        self._skills_view = SkillsMcpView()
+        self._activity_view = ActivityView()
+        self._agent_center_view = AgentCenterView()
+        self._command_center_view = CommandCenterView()
 
         self._views_map = {
-            "chat": self._assistant_view,
-            "tasks": self._tasks_view,
+            "home":     self._home_view,
+            "chat":     self._assistant_view,
+            "tasks":    self._tasks_view,
             "calendar": self._calendar_view,
-            "notes": self._notes_view,
-            "files": self._files_view,
-            "system": self._system_view,
+            "notes":    self._notes_view,
+            "files":    self._files_view,
+            "system":   self._system_view,
             "settings": self._settings_view,
+            "coding":   self._coding_view,
+            "research": self._research_view,
+            "vision":   self._vision_view,
+            "skills":   self._skills_view,
+            "activity": self._activity_view,
+            "agents":   self._agent_center_view,
+            "command":  self._command_center_view,
         }
 
         for view in self._views_map.values():
             self._stack.addWidget(view)
 
-        self._stack.setCurrentWidget(self._assistant_view)
+        self._stack.setCurrentWidget(self._home_view)
 
     def _setup_subcomponents(self):
-        # 1. Raycast Command Palette
+        # Command Palette
         self._palette = CommandPalette(self)
         self._palette.action_triggered.connect(self._on_palette_action)
 
-        # 2. Desktop Mini Widget
+        # Mini Widget
         self._mini_widget = MiniWidget()
         self._mini_widget.expand_requested.connect(self._restore_from_mini)
         self._mini_widget.mic_clicked.connect(self._capture_voice_single)
 
-        # 3. Dedicated Voice Overlay
+        # Voice Overlay
         central = self.centralWidget()
         self._voice_overlay = VoiceOverlay(central)
         self._voice_overlay.setGeometry(central.rect())
@@ -355,30 +361,25 @@ class MainWindow(QMainWindow):
         self._voice_overlay.interrupted.connect(self._cancel_voice)
 
     def _connect_signals(self):
-        # Sidebar navigation & actions
         self._sidebar.page_changed.connect(self._switch_page)
         self._sidebar.new_conversation_requested.connect(self._new_conversation)
 
-        # Assistant View
+        self._home_view.nav_requested.connect(self._switch_page)
+        self._home_view.submit_prompt.connect(self._on_home_prompt_submitted)
+        self._home_view.voice_toggle_requested.connect(self._toggle_continuous_voice)
+
         self._assistant_view.message_sent.connect(self._process_message)
         self._assistant_view.voice_requested.connect(self._capture_voice_single)
         self._assistant_view.voice_mode_requested.connect(self._open_voice_mode)
 
-        # Files View summarize action
         self._files_view.summarize_requested.connect(self._summarize_file_request)
 
-        # Keyboard shortcuts
-        sc_palette = QShortcut(QKeySequence("Ctrl+Space"), self)
-        sc_palette.activated.connect(self._open_command_palette)
-
-        sc_mini = QShortcut(QKeySequence("Ctrl+M"), self)
-        sc_mini.activated.connect(self._toggle_mini_mode)
-
-        sc_new = QShortcut(QKeySequence("Ctrl+N"), self)
-        sc_new.activated.connect(self._new_conversation)
-
-        sc_esc = QShortcut(QKeySequence("Ctrl+Shift+Escape"), self)
-        sc_esc.activated.connect(self._trigger_emergency)
+        # Shortcuts
+        QShortcut(QKeySequence("Ctrl+Space"), self).activated.connect(self._open_command_palette)
+        QShortcut(QKeySequence("Ctrl+K"), self).activated.connect(self._open_command_palette)
+        QShortcut(QKeySequence("Ctrl+M"), self).activated.connect(self._toggle_mini_mode)
+        QShortcut(QKeySequence("Ctrl+N"), self).activated.connect(self._new_conversation)
+        QShortcut(QKeySequence("Ctrl+Shift+Escape"), self).activated.connect(self._trigger_emergency)
 
         # Event Bus
         try:
@@ -396,10 +397,9 @@ class MainWindow(QMainWindow):
     def _new_conversation(self):
         self._switch_page("chat")
         self._assistant_view.reset_to_idle()
-        ToastManager.show(self, "New conversation initialized", level="info")
+        ToastManager.show(self, "New conversation", level="info")
 
     def _open_command_palette(self):
-        # Center palette over main window
         px = self.x() + (self.width() - self._palette.width()) // 2
         py = self.y() + (self.height() - self._palette.height()) // 2
         self._palette.move(px, py)
@@ -407,15 +407,13 @@ class MainWindow(QMainWindow):
 
     def _on_palette_action(self, action_id: str, data: dict):
         if action_id == "ask_prompt":
-            query = data.get("query", "")
             self._switch_page("chat")
-            self._assistant_view._input_box.set_text(query)
-            self._assistant_view._on_user_submit(query, [])
+            self._assistant_view._input_box.set_text(data.get("query", ""))
+            self._assistant_view._on_user_submit(data.get("query", ""), [])
         elif action_id == "new_chat":
             self._new_conversation()
         elif action_id.startswith("nav_"):
-            target = action_id.replace("nav_", "")
-            self._switch_page(target)
+            self._switch_page(action_id.replace("nav_", ""))
         elif action_id == "voice_mode":
             self._open_voice_mode()
         elif action_id == "mini_mode":
@@ -435,11 +433,10 @@ class MainWindow(QMainWindow):
 
     def _toggle_mini_mode(self):
         self.hide()
-        # Position mini widget in bottom-right corner of screen
         geo = QApplication.primaryScreen().availableGeometry()
         self._mini_widget.move(geo.width() - 250, geo.height() - 80)
         self._mini_widget.show()
-        ToastManager.show(self._mini_widget, "OMEN Mini Mode Active", level="omen")
+        ToastManager.show(self._mini_widget, "Mini Mode Active", level="omen")
 
     def _restore_from_mini(self):
         self._mini_widget.hide()
@@ -447,32 +444,39 @@ class MainWindow(QMainWindow):
         self.raise_()
         self.activateWindow()
 
+    def _toggle_continuous_voice(self):
+        if self._continuous_voice_active:
+            self._cancel_voice()
+            ToastManager.show(self, "Voice mode ended", level="info")
+        else:
+            self._continuous_voice_active = True
+            ToastManager.show(self, "Voice mode active — speak freely", level="success")
+            self._capture_voice_turn()
+
     def _open_voice_mode(self):
-        central = self.centralWidget()
-        self._voice_overlay.setGeometry(central.rect())
-        self._voice_overlay.show()
-        self._voice_overlay.set_voice_state("listening")
-        self._capture_voice_turn()
+        self._toggle_continuous_voice()
 
     def _close_voice_mode(self):
         self._cancel_voice()
         self._voice_overlay.hide()
 
     def _capture_voice_single(self):
-        self._continuous_voice_active = False
+        # Enable continuous conversation by default so speech flows naturally like talking to a person
+        self._continuous_voice_active = True
         self._capture_voice_turn()
 
     def _capture_voice_turn(self):
         self._sidebar.set_status("Listening...", "busy")
         self._mini_widget.set_state("listening")
-        self.statusBar().showMessage("Listening for speech...")
+        self._home_view.set_voice_state("listening")
+        if self._voice_overlay.isVisible():
+            self._voice_overlay.set_voice_state("listening")
+        self.statusBar().showMessage("Listening...")
 
-        # Voice meter
         self._voice_meter = VoiceMeter(self)
         self._voice_meter.level.connect(self._on_voice_level)
         self._voice_meter.start()
 
-        # Voice worker
         self._voice_worker = VoiceWorker(self)
         self._voice_worker.transcript.connect(self._on_voice_transcript)
         self._voice_worker.unavailable.connect(self._on_voice_unavailable)
@@ -480,6 +484,7 @@ class MainWindow(QMainWindow):
 
     def _on_voice_level(self, level: float):
         self._mini_widget.set_voice_level(level)
+        self._home_view.set_voice_state("listening", level)
         if self._voice_overlay.isVisible():
             self._voice_overlay.set_audio_level(level)
 
@@ -489,27 +494,61 @@ class MainWindow(QMainWindow):
             self._voice_worker.cancel()
             self._voice_worker.requestInterruption()
         self._stop_voice_meter()
-        self._sidebar.set_status("OMEN v1.0 · Ready", "ready")
+        self._sidebar.set_status("Ready", "ready")
         self._mini_widget.set_state("idle")
-        self.statusBar().showMessage("OMEN Ready")
+        self._home_view.set_voice_state("idle")
+        if self._voice_overlay.isVisible():
+            self._voice_overlay.set_voice_state("idle")
+        self.statusBar().showMessage("Ready")
 
     def _on_voice_transcript(self, transcript: str):
         self._stop_voice_meter()
-        self.statusBar().showMessage("Processing utterance...")
+        self.statusBar().showMessage(f"Heard: {transcript}")
         self._mini_widget.set_state("thinking")
+        self._home_view.set_voice_state("thinking")
         if self._voice_overlay.isVisible():
             self._voice_overlay.set_voice_state("thinking", transcript)
+
+        lower = transcript.strip().lower()
+        dismissal_phrases = (
+            "exit voice", "quit voice", "stop listening", "goodbye", "bye omen",
+            "cancel voice", "that's all", "thank you omen", "go to sleep",
+            "sleep now", "dismissed", "stop conversation",
+        )
+        if any(term in lower for term in dismissal_phrases):
+            self._cancel_voice()
+            if self._agent.tts and self._agent.tts.is_available:
+                self._agent.tts.speak("Goodbye, sir.")
+            ToastManager.show(self, "Voice conversation ended", level="info")
+            return
 
         self._switch_page("chat")
         self._assistant_view._on_user_submit(transcript, [])
 
     def _on_voice_unavailable(self, reason: str):
         self._stop_voice_meter()
-        self._sidebar.set_status("OMEN v1.0 · Ready", "ready")
-        self._mini_widget.set_state("idle")
-        self.statusBar().showMessage(f"Voice input ended: {reason}")
+        self._sidebar.set_status("Ready", "ready")
+        self.statusBar().showMessage(f"Voice: {reason}")
         if self._voice_overlay.isVisible():
-            self._voice_overlay.update_transcript(f"Voice ended: {reason}")
+            self._voice_overlay.update_transcript(f"Voice: {reason}")
+
+        if self._continuous_voice_active:
+            self._home_view.set_voice_state("idle")
+            # Automatically resume listening after pause so the conversation stays alive
+            QTimer.singleShot(750, self._capture_voice_turn)
+        else:
+            self._mini_widget.set_state("idle")
+            self._home_view.set_voice_state("idle")
+
+    def _resume_continuous_voice(self):
+        if self._continuous_voice_active:
+            if self._voice_overlay.isVisible():
+                self._voice_overlay.set_voice_state("listening", "Listening for your reply...")
+            QTimer.singleShot(400, self._capture_voice_turn)
+        else:
+            self._home_view.set_voice_state("idle")
+            if self._voice_overlay.isVisible():
+                self._voice_overlay.set_voice_state("idle")
 
     def _stop_voice_meter(self):
         if hasattr(self, "_voice_meter") and self._voice_meter.isRunning():
@@ -517,14 +556,15 @@ class MainWindow(QMainWindow):
 
     def _summarize_file_request(self, file_path: str):
         self._switch_page("chat")
-        prompt = f"Please examine and summarize this workspace file:\n{file_path}"
+        prompt = f"Please examine and summarize this file:\n{file_path}"
         self._assistant_view._input_box.set_text(prompt)
         self._assistant_view._on_user_submit(prompt, [{"path": file_path, "type": "file"}])
 
     def _process_message(self, prompt: str):
-        self._sidebar.set_status("OMEN thinking...", "busy")
+        self._sidebar.set_status("Thinking...", "busy")
         self._mini_widget.set_state("thinking")
-        self.statusBar().showMessage("OMEN is thinking...")
+        self._home_view.set_voice_state("thinking")
+        self.statusBar().showMessage("Thinking...")
 
         self._agent_worker = AgentWorker(self._agent, prompt, self)
         self._agent_worker.completed.connect(self._on_agent_completed)
@@ -532,11 +572,11 @@ class MainWindow(QMainWindow):
         self._agent_worker.start()
 
     def _on_agent_completed(self, result):
-        self._sidebar.set_status("OMEN v1.0 · Ready", "ready")
+        self._sidebar.set_status("Ready", "ready")
         self._mini_widget.set_state("idle")
-        self.statusBar().showMessage("OMEN Ready")
+        self.statusBar().showMessage("Ready")
 
-        response = result.get("response_text") or "Action completed."
+        response = result.get("response_text") or "Done."
         plan = result.get("plan")
         tools_executed = []
         if plan and plan.steps:
@@ -548,17 +588,28 @@ class MainWindow(QMainWindow):
         if self._voice_overlay.isVisible():
             self._voice_overlay.set_voice_state("speaking", response)
 
-        # Voice audio if enabled
-        if self._agent.tts and self._agent.tts.is_available:
-            self._agent.tts.speak_async(response)
+        # In continuous voice conversation, speak the reply then seamlessly re-arm mic for user's next words
+        if self._continuous_voice_active:
+            self._home_view.set_voice_state("speaking")
+            if self._agent.tts and self._agent.tts.is_available:
+                self._agent.tts.speak(response, on_done=self._resume_continuous_voice)
+            else:
+                # If TTS not available or finished, resume listening seamlessly
+                QTimer.singleShot(1000, self._resume_continuous_voice)
+        elif self._agent.tts and self._agent.tts.is_available:
+            self._agent.tts.speak(response)
 
-        ToastManager.show(self, "OMEN completed the action", level="success")
+        ToastManager.show(self, "Completed", level="success")
+
+    def _on_home_prompt_submitted(self, prompt: str, attachments: list):
+        self._switch_page("chat")
+        self._assistant_view._on_user_submit(prompt, attachments)
 
     def _on_agent_failed(self, error: str):
         self._sidebar.set_status("Error", "error")
         self._mini_widget.set_state("error")
         self.statusBar().showMessage(f"Error: {error}")
-        self._assistant_view.add_omen_response(f"An error occurred while executing the request:\n{error}")
+        self._assistant_view.add_omen_response(f"Error:\n{error}")
         ToastManager.show(self, "Execution failed", level="error")
 
     def _trigger_emergency(self):
@@ -566,7 +617,7 @@ class MainWindow(QMainWindow):
         stop = get_emergency_stop()
         stop.trigger()
         self._emergency_banner.setHidden(False)
-        self._assistant_view.add_omen_response("🛑 EMERGENCY PROTOCOL ACTIVATED. All background tool operations halted.")
+        self._assistant_view.add_omen_response("🛑 EMERGENCY STOP ACTIVATED")
         ToastManager.show(self, "Emergency stop engaged", level="error")
 
     def reset_emergency(self):
@@ -579,7 +630,7 @@ class MainWindow(QMainWindow):
     def _on_agent_state(self, event):
         state = event.payload.get("state", "")
         if state == "ERROR":
-            self.statusBar().showMessage("Agent encountered an error.", 4000)
+            self.statusBar().showMessage("Agent error", 4000)
 
     def _on_error(self, event):
         err = event.payload.get("error", "An error occurred.")

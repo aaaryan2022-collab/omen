@@ -111,6 +111,8 @@ def _load_builtin_tools() -> None:
         SearchEmailTool,
         SummarizeEmailTool,
     )
+    from tools.email.conversational_email import ReadEmailsAloudTool, ReadEmailDetailTool
+    from tools.email.voice_email_tool import VoiceEmailTool
     from tools.filesystem.file_ops import (
         CopyFileTool,
         CreateFileTool,
@@ -151,10 +153,28 @@ def _load_builtin_tools() -> None:
         GetHardwareProfileTool,
     )
     from tools.vision import AnalyzeScreenTool, ClickScreenTargetTool
+    from tools.coding import ApplyPatchTool, TerminalRunTool, GitTool, CodebaseSearchTool
+    from tools.system.window_tools import (
+        ListWindowsTool,
+        FocusWindowTool,
+        MinimizeWindowTool,
+        ShowDesktopTool,
+    )
+    from tools.system.hotkey_tools import SendHotkeyTool, PressKeyTool
+    from tools.system.clipboard_tools import GetClipboardTool, SetClipboardTool
+    from tools.media.media_control import (
+        MediaPlayPauseTool,
+        MediaNextTrackTool,
+        MediaPreviousTrackTool,
+        MediaMuteTool,
+    )
+    from tools.system.python_eval import ExecutePythonTool
 
     tool_classes = (
         LaunchUrlTool, ReadWebpageTool, WebSearchTool,
         DraftEmailTool, ReadInboxTool, SearchEmailTool, SummarizeEmailTool,
+        ReadEmailsAloudTool, ReadEmailDetailTool,
+        VoiceEmailTool,
         CopyFileTool, CreateFileTool, CreateFolderTool, DeleteFileTool,
         MoveFileTool, ReadFileTool, RenameFileTool, SearchFilesTool,
         SetVolumeTool, TakeScreenshotTool,
@@ -169,6 +189,12 @@ def _load_builtin_tools() -> None:
         GetMemoryUsageTool, GetRunningProcessesTool, GetSystemInfoTool,
         GetHardwareProfileTool,
         AnalyzeScreenTool, ClickScreenTargetTool,
+        ApplyPatchTool, TerminalRunTool, GitTool, CodebaseSearchTool,
+        ListWindowsTool, FocusWindowTool, MinimizeWindowTool, ShowDesktopTool,
+        SendHotkeyTool, PressKeyTool,
+        GetClipboardTool, SetClipboardTool,
+        MediaPlayPauseTool, MediaNextTrackTool, MediaPreviousTrackTool, MediaMuteTool,
+        ExecutePythonTool,
     )
     for tool_class in tool_classes:
         _registry_instance.register(tool_class())

@@ -12,8 +12,14 @@ venv/
 env/
 .env
 data/*.db
+data/*.db-*
 data/*.sqlite
+data/vector_memory/
 logs/*.log
+logs/
+.claude/
+reference/
+.omen/
 *.spec
 .DS_Store
 Thumbs.db

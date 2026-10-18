@@ -1,1 +1,0 @@
-- [OMEN Upgrade 2026-10-07](omen-upgrade-2026-10-07.md) — full upgrade executed, audit+redesign+regs+tests, delete pending

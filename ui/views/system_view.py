@@ -27,49 +27,64 @@ class MinimalMeterCard(QFrame):
 
     def __init__(self, title: str, unit: str = "%", parent=None):
         super().__init__(parent)
+        self.setObjectName("meterCard")
+        self.setMinimumHeight(135)
         self.setStyleSheet("""
-            QFrame {
-                background-color: rgba(21, 21, 28, 0.75);
-                border: 1px solid rgba(255, 255, 255, 0.06);
+            QFrame#meterCard {
+                background-color: rgba(21, 21, 28, 0.85);
+                border: 1px solid rgba(255, 255, 255, 0.08);
                 border-radius: 12px;
-                padding: 14px 18px;
+            }
+            QFrame#meterCard:hover {
+                border: 1px solid rgba(0, 210, 238, 0.3);
+                background-color: rgba(25, 25, 34, 0.95);
+            }
+            QLabel {
+                background: transparent;
+                border: none;
+                padding: 0px;
+                margin: 0px;
             }
         """)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(8)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(10)
 
         # Header: Title + Status dot
         top_row = QHBoxLayout()
+        top_row.setContentsMargins(0, 0, 0, 0)
         t_lbl = QLabel(title.upper())
-        t_lbl.setStyleSheet(f"color: {TEXT_DIM}; font-size: 11px; font-weight: 600; letter-spacing: 1px;")
+        t_lbl.setStyleSheet(f"color: {TEXT_DIM}; font-size: 11px; font-weight: 700; letter-spacing: 1.2px;")
         top_row.addWidget(t_lbl)
         top_row.addStretch()
 
         self._dot = QLabel("●")
-        self._dot.setStyleSheet(f"color: {SUCCESS}; font-size: 8px;")
+        self._dot.setStyleSheet(f"color: {SUCCESS}; font-size: 9px;")
         top_row.addWidget(self._dot)
         layout.addLayout(top_row)
 
         # Primary Big Value
         self._value_lbl = QLabel(f"-- {unit}")
+        self._value_lbl.setMinimumHeight(34)
         self._value_lbl.setStyleSheet(f"""
-            color: {TEXT_PRIMARY};
-            font-size: 24px;
-            font-weight: 700;
-            font-family: Consolas, Segoe UI;
+            QLabel {{
+                color: {TEXT_PRIMARY};
+                font-size: 26px;
+                font-weight: 700;
+                font-family: Consolas, monospace;
+            }}
         """)
         layout.addWidget(self._value_lbl)
 
         # Minimal Progress Bar
         self._bar = QProgressBar()
-        self._bar.setFixedHeight(4)
+        self._bar.setFixedHeight(5)
         self._bar.setTextVisible(False)
         self._bar.setRange(0, 100)
         self._bar.setStyleSheet(f"""
             QProgressBar {{
-                background-color: rgba(255, 255, 255, 0.05);
+                background-color: rgba(255, 255, 255, 0.06);
                 border: none;
                 border-radius: 2px;
             }}
@@ -82,7 +97,7 @@ class MinimalMeterCard(QFrame):
 
         # Subtitle / Details
         self._sub_lbl = QLabel("Monitoring...")
-        self._sub_lbl.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 11px;")
+        self._sub_lbl.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 11.5px;")
         layout.addWidget(self._sub_lbl)
 
     def update_metric(self, value: float, value_str: str, subtitle: str, is_warning: bool = False):
@@ -92,7 +107,7 @@ class MinimalMeterCard(QFrame):
         col = WARNING if is_warning else (PRIMARY if value < 80 else ERROR)
         self._bar.setStyleSheet(f"""
             QProgressBar {{
-                background-color: rgba(255, 255, 255, 0.05);
+                background-color: rgba(255, 255, 255, 0.06);
                 border: none;
                 border-radius: 2px;
             }}
@@ -163,16 +178,22 @@ class SystemView(QWidget):
 
         # Hardware summary card
         summary_frame = QFrame()
+        summary_frame.setObjectName("summaryCard")
         summary_frame.setStyleSheet("""
-            QFrame {
-                background-color: rgba(21, 21, 28, 0.65);
-                border: 1px solid rgba(255, 255, 255, 0.05);
+            QFrame#summaryCard {
+                background-color: rgba(21, 21, 28, 0.75);
+                border: 1px solid rgba(255, 255, 255, 0.07);
                 border-radius: 12px;
-                padding: 16px 20px;
+            }
+            QLabel {
+                background: transparent;
+                border: none;
+                padding: 0px;
             }
         """)
         s_layout = QVBoxLayout(summary_frame)
-        s_layout.setSpacing(8)
+        s_layout.setContentsMargins(18, 14, 18, 14)
+        s_layout.setSpacing(6)
 
         hw_title = QLabel("HARDWARE ENVIRONMENT")
         hw_title.setStyleSheet(f"color: {TEXT_DIM}; font-size: 11px; font-weight: bold; letter-spacing: 1px;")

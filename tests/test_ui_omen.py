@@ -167,7 +167,11 @@ def test_main_window_assembly(qapp):
     from core.agent import Agent
     agent = Agent()
     window = MainWindow(agent)
-    assert window._stack.count() == 7
+    assert window._stack.count() == 15
+    window._switch_page("coding")
+    assert window._stack.currentWidget() == window._coding_view
+    window._switch_page("research")
+    assert window._stack.currentWidget() == window._research_view
     window._switch_page("tasks")
     assert window._stack.currentWidget() == window._tasks_view
     window._switch_page("calendar")

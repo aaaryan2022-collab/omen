@@ -69,12 +69,23 @@ class TTSController(TTSProvider):
             return
         self._speak_text(text, rate, volume)
 
-    def speak_async(self, text: str, rate: Optional[int] = None, volume: Optional[float] = None):
+    def speak_async(
+        self,
+        text: str,
+        rate: Optional[int] = None,
+        volume: Optional[float] = None,
+        on_done=None,
+    ):
         """Speaks text in background, interrupting any current speech."""
         if not self.is_available or not text.strip():
+            if on_done:
+                try:
+                    on_done()
+                except Exception:
+                    pass
             return
         self._interrupt_event.set()  # Interrupt current speech
-        self._speak_queue.put((text, rate, volume))
+        self._speak_queue.put((text, rate, volume, on_done))
 
     def stop(self):
         """Stops current speech immediately."""
@@ -99,9 +110,14 @@ class TTSController(TTSProvider):
                 ))
         return voices
 
-    def _speak_text(self, text: str, rate: Optional[int], volume: Optional[float]):
+    def _speak_text(self, text: str, rate: Optional[int], volume: Optional[float], on_done=None):
         """Internal method to speak text on the main thread."""
         if not self._engine:
+            if on_done:
+                try:
+                    on_done()
+                except Exception:
+                    pass
             return
         try:
             self._set_state(TTSState.SPEAKING)
@@ -115,12 +131,23 @@ class TTSController(TTSProvider):
         except Exception as e:
             logger.error(f"TTS speak error: {e}")
             self._set_state(TTSState.ERROR)
+        finally:
+            if on_done:
+                try:
+                    on_done()
+                except Exception as cb_err:
+                    logger.debug("TTS on_done callback error: %s", cb_err)
 
     def _queue_worker(self):
         """Background worker that processes the speak queue."""
         while True:
             try:
-                text, rate, volume = self._speak_queue.get(timeout=1.0)
+                item = self._speak_queue.get(timeout=1.0)
+                if len(item) == 4:
+                    text, rate, volume, on_done = item
+                else:
+                    text, rate, volume = item
+                    on_done = None
                 if self._interrupt_event.is_set():
                     try:
                         self._engine.stop()
@@ -129,7 +156,9 @@ class TTSController(TTSProvider):
                     self._interrupt_event.clear()
 
                 if self.is_available and text.strip():
-                    self._speak_text(text, rate, volume)
+                    self._speak_text(text, rate, volume, on_done)
+                elif on_done:
+                    on_done()
             except queue.Empty:
                 continue
             except Exception as e:

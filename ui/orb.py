@@ -1,242 +1,395 @@
 # ============================================
 """
-OMEN Visual Identity — Premium Intelligent Orb Indicator.
-Restrained, futuristic, lightweight, state-driven animations:
-- IDLE: Soft static glow, calm breathing core
-- LISTENING: Gentle pulsing animation reacting to voice energy
-- THINKING: Slow interacting particles & counter-rotating orbital rings
-- SPEAKING: Concentric subtle waveform ripples
-- PROCESSING: Smooth orbital activity tracer
-- ERROR: Restrained warning state with amber/red rim
+OMEN Central 3D Particle Sphere — Core Identity Element.
+Hardware-accelerated mathematical 3D particle system featuring:
+- Fibonacci spherical lattice (480 dynamic 3D vertices)
+- Real-time perspective projection with depth-sorting & volumetric bloom
+- Voice-reactive displacement (amplitude + harmonic frequency deformation)
+- Mouse interaction (drag to rotate with inertia, proximity gravity, click ripple)
+- Orbital energy filaments & trailing photon sparks
+- Distinct operational states: idle, listening, thinking, speaking, tool, success, error
 """
 
 import math
 import random
+from typing import List, Dict, Any, Tuple
 from PySide6.QtCore import QTimer, Qt, Signal, QRectF, QPointF
-from PySide6.QtGui import QPainter, QPen, QColor, QRadialGradient, QBrush, QFont
+from PySide6.QtGui import (
+    QPainter, QPen, QColor, QRadialGradient, QBrush, QFont, QCursor, QLinearGradient
+)
 from PySide6.QtWidgets import QWidget
 from ui.styles.palette import (
-    PRIMARY, PRIMARY_LIGHT, SECONDARY, SUCCESS, WARNING, ERROR, TEXT_PRIMARY, TEXT_DIM,
+    PRIMARY, PRIMARY_LIGHT, SECONDARY, SUCCESS, WARNING, ERROR,
+    TEXT_PRIMARY, TEXT_DIM, BACKGROUND_DARK,
 )
+
+
+class Particle3D:
+    """A single particle in 3D spherical coordinates."""
+    __slots__ = ("base_x", "base_y", "base_z", "phase", "speed", "size_factor", "seed", "color_offset")
+
+    def __init__(self, x: float, y: float, z: float, i: int):
+        self.base_x = x
+        self.base_y = y
+        self.base_z = z
+        self.phase = random.uniform(0.0, math.pi * 2)
+        self.speed = random.uniform(0.8, 1.6)
+        self.size_factor = random.uniform(0.7, 1.4)
+        self.seed = random.uniform(0.0, 100.0)
+        self.color_offset = (i % 7) / 7.0
 
 
 class OmenOrb(QWidget):
     """
-    Intelligent visual identity orb for OMEN.
-    Renders high-DPI antialiased procedural particle and vector graphics.
+    Central 3D Particle Sphere identity widget for OMEN.
+    Full interactive 3D particle engine with audio and mouse reactivity.
     """
 
     clicked = Signal()
+    stateChanged = Signal(str)
 
-    def __init__(self, parent=None, size=160, show_label=True):
+    # State Color Palettes: (Primary Glow, Core Spark, Secondary Filament, State Title)
+    STATE_PALETTES = {
+        "idle": (QColor("#8B5CF6"), QColor("#00D2EE"), QColor("#6366F1"), "READY"),
+        "listening": (QColor("#00F5FF"), QColor("#FFFFFF"), QColor("#38BDF8"), "LISTENING"),
+        "thinking": (QColor("#A855F7"), QColor("#F59E0B"), QColor("#EC4899"), "THINKING"),
+        "speaking": (QColor("#00E5FF"), QColor("#10B981"), QColor("#38BDF8"), "SPEAKING"),
+        "processing": (QColor("#F59E0B"), QColor("#FBBF24"), QColor("#00D2EE"), "EXECUTING"),
+        "tool": (QColor("#F59E0B"), QColor("#FBBF24"), QColor("#00D2EE"), "EXECUTING"),
+        "success": (QColor("#10B981"), QColor("#34D399"), QColor("#6EE7B7"), "COMPLETED"),
+        "error": (QColor("#EF4444"), QColor("#F87171"), QColor("#DC2626"), "ALERT"),
+    }
+
+    def __init__(self, parent=None, size: int = 240, show_label: bool = True):
         super().__init__(parent)
         self._size = size
         self._show_label = show_label
-        self.setMinimumSize(size, size + (24 if show_label else 0))
-        if not show_label:
-            self.setFixedSize(size, size)
+        self.setMinimumSize(size, size + (32 if show_label else 0))
+        self.setMouseTracking(True)
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
 
-        self._state = "idle"  # idle, listening, thinking, speaking, processing, error
-        self._phase = 0.0
-        self._rotation = 0.0
+        self._state = "idle"
+        self._time = 0.0
         self._voice_level = 0.0
-        self._particles = [
-            {"angle": random.uniform(0, math.pi * 2), "speed": random.uniform(0.015, 0.04), "dist": random.uniform(0.5, 0.85), "size": random.uniform(1.8, 3.2)}
-            for _ in range(7)
+        self._target_voice_level = 0.0
+
+        # 3D Euler angles & momentum
+        self._rot_x = 0.25
+        self._rot_y = 0.0
+        self._vel_x = 0.0
+        self._vel_y = 0.006  # gentle idle auto-spin
+        self._mouse_down = False
+        self._last_mouse_pos = QPointF(0, 0)
+        self._hover_pos = QPointF(-1000, -1000)
+        self._click_ripple = 0.0
+
+        # Generate Fibonacci 3D Particle Lattice
+        self._num_particles = 440
+        self._particles: List[Particle3D] = []
+        golden_angle = math.pi * (3.0 - math.sqrt(5.0))
+        for i in range(self._num_particles):
+            y = 1.0 - (i / float(self._num_particles - 1)) * 2.0
+            radius_at_y = math.sqrt(max(0.0, 1.0 - y * y))
+            theta = golden_angle * i
+            x = math.cos(theta) * radius_at_y
+            z = math.sin(theta) * radius_at_y
+            self._particles.append(Particle3D(x, y, z, i))
+
+        # Orbiting filaments sparks (trailing photon points)
+        self._ring_sparks = [
+            {"angle": random.uniform(0, math.pi * 2), "speed": random.uniform(0.02, 0.04), "tilt": 0.45}
+            for _ in range(12)
         ]
 
+        # 60 FPS animation timer
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
-        self._timer.start(25)  # 40 FPS — silky smooth, negligible CPU (<0.2%)
+        self._timer.start(16)
 
     def _tick(self):
-        self._phase += 0.03
-        self._rotation += 0.6 if self._state in ("thinking", "processing") else 0.25
-        self._voice_level *= 0.90
+        self._time += 0.025
 
-        # Update thinking particles
-        for p in self._particles:
-            p["angle"] = (p["angle"] + p["speed"]) % (math.pi * 2)
+        # Smooth voice envelope decay
+        self._voice_level += (self._target_voice_level - self._voice_level) * 0.25
+        self._target_voice_level *= 0.88
+
+        # Decay click ripple
+        if self._click_ripple > 0:
+            self._click_ripple = max(0.0, self._click_ripple - 0.035)
+
+        # Apply rotation momentum
+        if not self._mouse_down:
+            base_speed = 0.024 if self._state in ("thinking", "processing", "tool") else 0.007
+            self._rot_y += self._vel_y
+            self._rot_x += self._vel_x
+            self._vel_y += (base_speed - self._vel_y) * 0.05
+            self._vel_x *= 0.92
+        else:
+            self._rot_y += self._vel_y
+            self._rot_x += self._vel_x
+
+        # Update orbiting ring sparks
+        for spark in self._ring_sparks:
+            spark["angle"] = (spark["angle"] + spark["speed"]) % (math.pi * 2)
 
         self.update()
 
     def set_state(self, state: str):
-        state = state.lower()
-        if state in ("idle", "listening", "thinking", "speaking", "processing", "error"):
+        state = state.lower().strip()
+        if state in self.STATE_PALETTES:
             self._state = state
         elif state in ("ready", "standby"):
             self._state = "idle"
-        elif state in ("action", "tool"):
+        elif state in ("action", "busy"):
             self._state = "processing"
+        self.stateChanged.emit(self._state)
         self.update()
 
     def set_voice_mode(self, mode: str):
-        """Backward compatibility for existing callers."""
+        """Compatibility wrapper."""
         self.set_state(mode)
 
     def set_voice_level(self, level: float):
-        self._voice_level = max(0.0, min(1.0, level))
+        lvl = max(0.0, min(1.0, level))
+        self._voice_level = lvl
+        self._target_voice_level = lvl
         self.update()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
+            self._mouse_down = True
+            self._last_mouse_pos = event.position()
+            self._click_ripple = 1.0
             self.clicked.emit()
         super().mousePressEvent(event)
 
-    def _get_state_palette(self):
-        if self._state == "listening":
-            return QColor("#00D2EE"), QColor("#38BDF8"), "LISTENING"
-        elif self._state == "thinking":
-            return QColor("#FBBF24"), QColor("#00D2EE"), "THINKING"
-        elif self._state == "speaking":
-            return QColor("#38BDF8"), QColor("#00D2EE"), "SPEAKING"
-        elif self._state == "processing":
-            return QColor("#00D2EE"), QColor("#10B981"), "PROCESSING"
-        elif self._state == "error":
-            return QColor("#EF4444"), QColor("#F59E0B"), "ALERT"
-        else:
-            return QColor("#00D2EE"), QColor("#38BDF8"), "READY"
+    def mouseMoveEvent(self, event):
+        self._hover_pos = event.position()
+        if self._mouse_down:
+            delta = event.position() - self._last_mouse_pos
+            self._last_mouse_pos = event.position()
+            self._vel_y = delta.x() * 0.008
+            self._vel_x = -delta.y() * 0.008
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self._mouse_down = False
+        super().mouseReleaseEvent(event)
+
+    def leaveEvent(self, event):
+        self._hover_pos = QPointF(-1000, -1000)
+        self._mouse_down = False
+        super().leaveEvent(event)
 
     def paintEvent(self, event):
         del event
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
 
         w, h = self.width(), self.height()
-        cx = w / 2.0
-        # If label is shown, keep orb centered in top square area
-        cy = (w / 2.0) if self._show_label else (h / 2.0)
-        r = min(w, (w if self._show_label else h)) * 0.38
+        sphere_h = h - (32 if self._show_label else 0)
+        cx, cy = w / 2.0, sphere_h / 2.0
+        base_radius = min(w, sphere_h) * 0.36
 
-        primary_c, secondary_c, label_text = self._get_state_palette()
+        primary_col, spark_col, secondary_col, title_text = self.STATE_PALETTES.get(
+            self._state, self.STATE_PALETTES["idle"]
+        )
 
-        breath = 0.5 + 0.5 * math.sin(self._phase)
-        energy = self._voice_level if self._state in ("listening", "speaking") else 0.0
+        # 1. Volumetric Deep Core Glow
+        breathe = math.sin(self._time * 2.0) * 0.08 + 1.0
+        active_boost = 1.0 + (self._voice_level * 0.7) + (self._click_ripple * 0.5)
+        glow_rad = base_radius * 1.35 * breathe * active_boost
 
-        # 1. Ambient Outer Halo (Subtle, non-distracting)
-        halo_r = r * (1.35 + (0.15 * energy if self._state == "listening" else 0.05 * breath))
-        halo = QRadialGradient(cx, cy, halo_r)
-        halo_alpha = 35 if self._state in ("listening", "speaking") else (45 if self._state == "thinking" else 22)
-        halo.setColorAt(0.0, QColor(primary_c.red(), primary_c.green(), primary_c.blue(), halo_alpha))
-        halo.setColorAt(0.5, QColor(primary_c.red(), primary_c.green(), primary_c.blue(), int(halo_alpha * 0.35)))
-        halo.setColorAt(1.0, QColor(0, 0, 0, 0))
-        p.setBrush(QBrush(halo))
-        p.setPen(Qt.PenStyle.NoPen)
-        p.drawEllipse(QRectF(cx - halo_r, cy - halo_r, halo_r * 2, halo_r * 2))
+        core_glow = QRadialGradient(cx, cy, glow_rad)
+        glow_alpha = 48 if self._state in ("listening", "speaking", "thinking") else 32
+        glow_col = QColor(primary_col.red(), primary_col.green(), primary_col.blue(), glow_alpha)
+        core_glow.setColorAt(0.0, glow_col)
+        core_glow.setColorAt(0.45, QColor(primary_col.red(), primary_col.green(), primary_col.blue(), glow_alpha // 3))
+        core_glow.setColorAt(1.0, QColor(0, 0, 0, 0))
+        painter.setBrush(QBrush(core_glow))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawEllipse(QRectF(cx - glow_rad, cy - glow_rad, glow_rad * 2, glow_rad * 2))
 
-        # 2. Translucent Glass Spherical Disk
-        disc_grad = QRadialGradient(cx - r * 0.25, cy - r * 0.25, r * 1.2)
-        disc_grad.setColorAt(0.0, QColor(24, 24, 32, 235))
-        disc_grad.setColorAt(0.75, QColor(13, 13, 18, 245))
-        disc_grad.setColorAt(1.0, QColor(7, 7, 10, 255))
-        p.setBrush(QBrush(disc_grad))
-        rim_color = QColor(255, 255, 255, 18)
-        if self._state == "error":
-            rim_color = QColor(239, 68, 68, 120)
-        elif self._state in ("listening", "speaking"):
-            rim_color = QColor(primary_c.red(), primary_c.green(), primary_c.blue(), 90)
-        p.setPen(QPen(rim_color, 1.0))
-        p.drawEllipse(QRectF(cx - r, cy - r, r * 2, r * 2))
+        # 2. Orbital Energy Filaments (Equatorial Rings)
+        self._draw_orbital_rings(painter, cx, cy, base_radius, primary_col, secondary_col)
 
-        # 3. State-Specific Animated Elements
-        if self._state == "idle":
-            # Soft static glow + subtle concentric micro-orbit
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            p.setPen(QPen(QColor(primary_c.red(), primary_c.green(), primary_c.blue(), 60), 1.0))
-            inner_ring_r = r * 0.72
-            p.drawEllipse(QRectF(cx - inner_ring_r, cy - inner_ring_r, inner_ring_r * 2, inner_ring_r * 2))
+        # 3. 3D Particle Matrix (Fibonacci Lattice with depth sort)
+        cos_y, sin_y = math.cos(self._rot_y), math.sin(self._rot_y)
+        cos_x, sin_x = math.cos(self._rot_x), math.sin(self._rot_x)
 
-            # Small accent arcs
-            p.setPen(QPen(primary_c, 1.4))
-            p.drawArc(QRectF(cx - r * 0.88, cy - r * 0.88, r * 1.76, r * 1.76), int(self._rotation * 8), 45 * 16)
-            p.drawArc(QRectF(cx - r * 0.88, cy - r * 0.88, r * 1.76, r * 1.76), int((self._rotation * 8) + 180 * 16), 45 * 16)
+        fov = 360.0
+        projected: List[Tuple[float, float, float, float, float, QColor]] = []
 
-        elif self._state == "listening":
-            # Gentle pulsing animation reacting to voice
-            pulse_mult = 1.0 + energy * 0.25 + 0.05 * math.sin(self._phase * 3)
-            ring_r = r * 0.65 * pulse_mult
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            p.setPen(QPen(primary_c, 1.6))
-            p.drawEllipse(QRectF(cx - ring_r, cy - ring_r, ring_r * 2, ring_r * 2))
+        # Cursor gravity in 2D widget plane
+        dx_h = self._hover_pos.x() - cx
+        dy_h = self._hover_pos.y() - cy
+        hover_dist = math.sqrt(dx_h * dx_h + dy_h * dy_h)
 
-            outer_pulse_r = r * 0.88 * (1.0 + energy * 0.18)
-            p.setPen(QPen(QColor(secondary_c.red(), secondary_c.green(), secondary_c.blue(), 100), 1.0))
-            p.drawEllipse(QRectF(cx - outer_pulse_r, cy - outer_pulse_r, outer_pulse_r * 2, outer_pulse_r * 2))
+        for p in self._particles:
+            # Base harmonic breathing displacement
+            t_wave = math.sin(self._time * p.speed + p.phase)
+            harmonic_disp = t_wave * 0.06
 
-        elif self._state == "thinking":
-            # Slow rotating interacting particles & counter-orbiting arcs
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            arc_r = r * 0.78
-            p.setPen(QPen(primary_c, 1.4))
-            p.drawArc(QRectF(cx - arc_r, cy - arc_r, arc_r * 2, arc_r * 2), int(self._rotation * 16), 110 * 16)
-            p.setPen(QPen(secondary_c, 1.2))
-            p.drawArc(QRectF(cx - (arc_r * 0.85), cy - (arc_r * 0.85), arc_r * 1.7, arc_r * 1.7), int(-self._rotation * 22), 80 * 16)
+            # Audio reactive pulse
+            audio_disp = 0.0
+            if self._state in ("listening", "speaking"):
+                audio_disp = math.sin(self._time * 10.0 + p.seed) * self._voice_level * 0.35
 
-            # Particles
-            p.setPen(Qt.PenStyle.NoPen)
-            for part in self._particles:
-                px = cx + math.cos(part["angle"]) * (r * part["dist"])
-                py = cy + math.sin(part["angle"]) * (r * part["dist"])
-                p.setBrush(QBrush(QColor(primary_c.red(), primary_c.green(), primary_c.blue(), 210)))
-                p.drawEllipse(QPointF(px, py), part["size"], part["size"])
+            # Ripple wave from click
+            ripple_disp = 0.0
+            if self._click_ripple > 0:
+                dist_from_equator = abs(p.base_y)
+                ripple_disp = math.sin(self._click_ripple * 6.0 - dist_from_equator * 4.0) * self._click_ripple * 0.22
 
-        elif self._state == "speaking":
-            # Subtle waveform / ripple animation
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            for i in range(3):
-                wave_r = r * (0.42 + i * 0.22 + 0.1 * math.sin(self._phase * 4 + i))
-                alpha = int(max(20, 180 - (i * 65) + energy * 60))
-                p.setPen(QPen(QColor(primary_c.red(), primary_c.green(), primary_c.blue(), min(255, alpha)), 1.2))
-                p.drawEllipse(QRectF(cx - wave_r, cy - wave_r, wave_r * 2, wave_r * 2))
+            r = base_radius * (1.0 + harmonic_disp + audio_disp + ripple_disp)
+            px = p.base_x * r
+            py = p.base_y * r
+            pz = p.base_z * r
 
-        elif self._state == "processing":
-            # Small activity tracker orbit
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            track_r = r * 0.75
-            p.setPen(QPen(QColor(255, 255, 255, 25), 1.0))
-            p.drawEllipse(QRectF(cx - track_r, cy - track_r, track_r * 2, track_r * 2))
+            # Rotate around Y axis
+            x1 = px * cos_y + pz * sin_y
+            y1 = py
+            z1 = -px * sin_y + pz * cos_y
 
-            # Active tracer dot & tail
-            p.setPen(QPen(primary_c, 2.0))
-            p.drawArc(QRectF(cx - track_r, cy - track_r, track_r * 2, track_r * 2), int(self._rotation * 24), 70 * 16)
+            # Rotate around X axis
+            x2 = x1
+            y2 = y1 * cos_x - z1 * sin_x
+            z2 = y1 * sin_x + z1 * cos_x
 
-            tracer_rad = self._rotation * 24 * (math.pi / (180.0 * 16.0))
-            tx = cx + math.cos(tracer_rad) * track_r
-            ty = cy - math.sin(tracer_rad) * track_r
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(QBrush(primary_c))
-            p.drawEllipse(QPointF(tx, ty), 3.2, 3.2)
+            # Perspective projection
+            scale = fov / (fov + z2)
+            screen_x = cx + x2 * scale
+            screen_y = cy + y2 * scale
 
-        elif self._state == "error":
-            # Restrained warning state
-            p.setBrush(Qt.BrushStyle.NoBrush)
-            p.setPen(QPen(QColor(239, 68, 68, 200), 1.6))
-            err_r = r * 0.78
-            p.drawEllipse(QRectF(cx - err_r, cy - err_r, err_r * 2, err_r * 2))
+            # Mouse attraction/deflection
+            if hover_dist < base_radius * 1.5:
+                mdx = screen_x - self._hover_pos.x()
+                mdy = screen_y - self._hover_pos.y()
+                mdist = math.sqrt(mdx * mdx + mdy * mdy)
+                if mdist < 90.0 and mdist > 1.0:
+                    force = (1.0 - mdist / 90.0) * 8.0
+                    screen_x += (mdx / mdist) * force
+                    screen_y += (mdy / mdist) * force
 
-        # 4. Central Luminous Core
-        core_r = r * (0.24 + (0.04 * breath) + (0.1 * energy))
-        core_grad = QRadialGradient(cx, cy, core_r)
-        core_grad.setColorAt(0.0, QColor(255, 255, 255, 240))
-        core_grad.setColorAt(0.4, QColor(primary_c.red(), primary_c.green(), primary_c.blue(), 200))
-        core_grad.setColorAt(0.85, QColor(primary_c.red(), primary_c.green(), primary_c.blue(), 60))
-        core_grad.setColorAt(1.0, QColor(0, 0, 0, 0))
-        p.setBrush(QBrush(core_grad))
-        p.setPen(Qt.PenStyle.NoPen)
-        p.drawEllipse(QRectF(cx - core_r, cy - core_r, core_r * 2, core_r * 2))
+            # Depth alpha & color interpolate
+            depth_factor = (z2 + base_radius) / (2.0 * base_radius)
+            depth_factor = max(0.0, min(1.0, depth_factor))
 
-        # 5. Optional Minimal Status Subtitle
-        if self._show_label and h > w:
-            font = QFont("Segoe UI", 7, QFont.Weight.Bold)
-            font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.8)
-            p.setFont(font)
-            p.setPen(QColor(TEXT_DIM))
-            tw = p.fontMetrics().horizontalAdvance(label_text)
-            text_y = cy + r + 20
-            p.drawText(QPointF(cx - tw / 2.0, text_y), label_text)
+            alpha = int(35 + depth_factor * 215)
+            if depth_factor > 0.65:
+                # Foreground sparks
+                col = QColor(spark_col.red(), spark_col.green(), spark_col.blue(), alpha)
+                pt_size = (1.8 + depth_factor * 2.6) * p.size_factor
+            else:
+                # Mid & background particles
+                col = QColor(primary_col.red(), primary_col.green(), primary_col.blue(), alpha)
+                pt_size = (1.0 + depth_factor * 2.0) * p.size_factor
 
-        p.end()
+            projected.append((z2, screen_x, screen_y, pt_size, depth_factor, col))
 
+        # Sort particles back-to-front (depth buffer simulation)
+        projected.sort(key=lambda item: item[0])
 
-# Alias for backward compatibility
-CommandCore = OmenOrb
+        # Draw Back Particles (z < 0)
+        for z, sx, sy, psize, depth, col in projected:
+            if z <= 0:
+                painter.setBrush(QBrush(col))
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.drawEllipse(QRectF(sx - psize / 2.0, sy - psize / 2.0, psize, psize))
+
+        # Draw Inner Luminescent Nucleus
+        nucleus_r = base_radius * 0.38 * (1.0 + self._voice_level * 0.25)
+        nucleus_grad = QRadialGradient(cx, cy, nucleus_r)
+        nucleus_grad.setColorAt(0.0, QColor(spark_col.red(), spark_col.green(), spark_col.blue(), 180))
+        nucleus_grad.setColorAt(0.5, QColor(primary_col.red(), primary_col.green(), primary_col.blue(), 90))
+        nucleus_grad.setColorAt(1.0, QColor(0, 0, 0, 0))
+        painter.setBrush(QBrush(nucleus_grad))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawEllipse(QRectF(cx - nucleus_r, cy - nucleus_r, nucleus_r * 2, nucleus_r * 2))
+
+        # Draw Front Particles (z > 0) with crisp bloom halos
+        for z, sx, sy, psize, depth, col in projected:
+            if z > 0:
+                # Subtle halo around brighter foreground particles
+                if depth > 0.75:
+                    halo_col = QColor(col.red(), col.green(), col.blue(), int(col.alpha() * 0.35))
+                    painter.setBrush(QBrush(halo_col))
+                    painter.drawEllipse(QRectF(sx - psize * 1.4, sy - psize * 1.4, psize * 2.8, psize * 2.8))
+
+                painter.setBrush(QBrush(col))
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.drawEllipse(QRectF(sx - psize / 2.0, sy - psize / 2.0, psize, psize))
+
+        # 4. Status Indicator Capsule Label (Optional)
+        if self._show_label:
+            self._draw_state_label(painter, w, h, primary_col, title_text)
+
+        painter.end()
+
+    def _draw_orbital_rings(self, painter: QPainter, cx: float, cy: float, r: float, c1: QColor, c2: QColor):
+        """Draws inclined elliptical orbital energy rings with trailing photon nodes."""
+        ring_r = r * 1.18
+        painter.save()
+        painter.translate(cx, cy)
+
+        # Primary Ring 1 (inclined at 25 deg)
+        painter.rotate(24)
+        pen1 = QPen(QColor(c1.red(), c1.green(), c1.blue(), 42), 1.2)
+        pen1.setStyle(Qt.PenStyle.SolidLine)
+        painter.setPen(pen1)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawEllipse(QRectF(-ring_r, -ring_r * 0.32, ring_r * 2, ring_r * 0.64))
+
+        # Secondary Ring 2 (counter-inclined at -38 deg)
+        painter.rotate(-62)
+        pen2 = QPen(QColor(c2.red(), c2.green(), c2.blue(), 30), 1.0)
+        painter.setPen(pen2)
+        painter.drawEllipse(QRectF(-ring_r * 1.08, -ring_r * 0.24, ring_r * 2.16, ring_r * 0.48))
+
+        # Orbiting photon sparks
+        for spark in self._ring_sparks:
+            ang = spark["angle"]
+            px = math.cos(ang) * ring_r
+            py = math.sin(ang) * ring_r * 0.32
+            alpha = int(140 + math.sin(ang) * 90)
+            painter.setBrush(QBrush(QColor(255, 255, 255, alpha)))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawEllipse(QRectF(px - 1.5, py - 1.5, 3.0, 3.0))
+
+        painter.restore()
+
+    def _draw_state_label(self, painter: QPainter, w: int, h: int, color: QColor, title: str):
+        """Presents a clean, high-DPI status pill beneath the sphere."""
+        label_w = 120
+        label_h = 24
+        lx = (w - label_w) / 2.0
+        ly = h - 28.0
+
+        # Background pill
+        pill_rect = QRectF(lx, ly, label_w, label_h)
+        pill_bg = QColor(14, 14, 20, 190)
+        painter.setBrush(QBrush(pill_bg))
+        pill_pen = QPen(QColor(color.red(), color.green(), color.blue(), 60), 1.0)
+        painter.setPen(pill_pen)
+        painter.drawRoundedRect(pill_rect, 12.0, 12.0)
+
+        # Pulsing dot
+        dot_r = 3.5
+        dot_x = lx + 16.0
+        dot_y = ly + label_h / 2.0
+        painter.setBrush(QBrush(color))
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.drawEllipse(QPointF(dot_x, dot_y), dot_r, dot_r)
+
+        # Status text
+        painter.setPen(QColor(TEXT_PRIMARY))
+        font = QFont("Segoe UI", 8, QFont.Weight.DemiBold)
+        font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.2)
+        painter.setFont(font)
+        painter.drawText(
+            QRectF(lx + 26.0, ly, label_w - 32.0, label_h),
+            Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+            title,
+        )

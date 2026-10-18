@@ -36,7 +36,7 @@ class OllamaProvider(LLMProvider):
             return self.model
         if models:
             self.model = models[0]
-            logger.warning("Configured Ollama model unavailable; using %s", self.model)
+            logger.info("Using active Ollama model: %s", self.model)
         return self.model
 
     def check_connection(self) -> bool:

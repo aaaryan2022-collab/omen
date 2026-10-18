@@ -148,11 +148,16 @@ class ActivityView(QWidget):
 
     def _refresh_processes(self):
         procs = []
-        for p in psutil.process_iter(['pid', 'name', 'memory_percent', 'cpu_percent']):
-            try:
-                procs.append(p.info)
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
+        try:
+            for p in psutil.process_iter():
+                try:
+                    info = p.as_dict(attrs=['pid', 'name', 'memory_percent', 'cpu_percent'])
+                    if info and info.get('name'):
+                        procs.append(info)
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess, PermissionError, OSError):
+                    continue
+        except Exception:
+            pass
         top = sorted(procs, key=lambda x: x.get('memory_percent') or 0, reverse=True)[:15]
 
         self._proc_table.setRowCount(len(top))

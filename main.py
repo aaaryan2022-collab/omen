@@ -292,6 +292,35 @@ def run_self_test():
     except Exception as e:
         test("Agent creation", lambda: False)
 
+    # Coding Suite test
+    try:
+        from tools.coding import checkpoint_store, ApplyPatchTool, CodebaseSearchTool
+        test("Coding suite & checkpoint store", lambda: checkpoint_store is not None and ApplyPatchTool is not None)
+    except Exception as e:
+        test("Coding suite", lambda: False)
+
+    # Skills & MCP test
+    try:
+        from core.skills.skills_registry import skills_registry
+        from core.mcp.mcp_client import mcp_manager
+        test(f"Skills registry ({len(skills_registry.list_all())} skills) & MCP manager", lambda: len(skills_registry.list_all()) >= 4 and mcp_manager is not None)
+    except Exception as e:
+        test("Skills & MCP", lambda: False)
+
+    # Deep Research test
+    try:
+        from core.research.deep_research import deep_research_agent
+        test("Deep research agent", lambda: deep_research_agent is not None)
+    except Exception as e:
+        test("Deep research", lambda: False)
+
+    # Traces & Observability test
+    try:
+        from core.traces.trace_collector import trace_collector
+        test("Execution trace collector", lambda: trace_collector is not None)
+    except Exception as e:
+        test("Execution trace collector", lambda: False)
+
     print(f"\nResults: {tests_passed} passed, {tests_failed} failed")
     return tests_failed == 0
 

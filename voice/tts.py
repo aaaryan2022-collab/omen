@@ -23,16 +23,20 @@ class OmenTTS:
     def is_available(self) -> bool:
         return self._available
 
-    def speak(self, text: str, interrupt: bool = True):
+    def speak(self, text: str, interrupt: bool = True, on_done=None):
         """
         Speaks text. If interrupt=True, stops any current speech first.
         """
         if not self._available or not text.strip():
+            if on_done:
+                on_done()
             return
         if interrupt:
-            self._provider.speak_async(text)
+            self._provider.speak_async(text, on_done=on_done)
         else:
             self._provider.speak(text)
+            if on_done:
+                on_done()
 
     def stop(self):
         """Stops any ongoing speech."""
